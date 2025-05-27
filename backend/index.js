@@ -8,13 +8,13 @@ const Attendance = require('./models/Attendance');
 const app = express();
 
 app.use(cors({
-  origin: 'http://localhost:5173' 
+  origin: 'http://localhost:5173'
 }));
 app.use(express.json());
 
-mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error(err));
+  .catch(err => console.error('MongoDB connection error:', err));
 
 app.post('/submit-attendance', async (req, res) => {
   try {
@@ -35,7 +35,7 @@ app.post('/submit-attendance', async (req, res) => {
     await attendance.save();
     res.json({ success: true });
   } catch (error) {
-    console.error(error);
+    console.error('Error saving attendance:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
