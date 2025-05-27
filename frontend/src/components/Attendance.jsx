@@ -6,6 +6,7 @@ export default function Attendance({ email, onLogout }) {
   const [loadingModels, setLoadingModels] = useState(true);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const streamRef = useRef(null); // ✅ store stream
 
   useEffect(() => {
     const loadModels = async () => {
@@ -19,8 +20,16 @@ export default function Attendance({ email, onLogout }) {
   useEffect(() => {
     if (!loadingModels) {
       navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+        streamRef.current = stream; // ✅ store the stream
         videoRef.current.srcObject = stream;
       });
+
+      // ✅ Cleanup function to stop the camera when component unmounts
+      return () => {
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+        }
+      };
     }
   }, [loadingModels]);
 
@@ -29,7 +38,6 @@ export default function Attendance({ email, onLogout }) {
     setSending(true);
 
     try {
-      // Detect face in video frame
       const detection = await faceapi.detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions());
       if (!detection) {
         setMessage('No face detected, please try again.');
@@ -37,7 +45,6 @@ export default function Attendance({ email, onLogout }) {
         return;
       }
 
-      // Capture face image from video
       const canvas = document.createElement('canvas');
       canvas.width = videoRef.current.videoWidth;
       canvas.height = videoRef.current.videoHeight;
@@ -45,12 +52,10 @@ export default function Attendance({ email, onLogout }) {
       ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
       const faceImageBase64 = canvas.toDataURL('image/jpeg');
 
-      // Get GPS location
       const position = await new Promise((res, rej) => {
         navigator.geolocation.getCurrentPosition(res, rej, { timeout: 10000 });
       });
 
-      // Prepare data
       const data = {
         email,
         timestamp: new Date().toISOString(),
@@ -59,7 +64,6 @@ export default function Attendance({ email, onLogout }) {
         faceImageBase64,
       };
 
-      // Send to backend
       const response = await fetch('http://localhost:3001/submit-attendance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -82,7 +86,16 @@ export default function Attendance({ email, onLogout }) {
   return (
     <div>
       <h2>Welcome, {email}</h2>
-      <button onClick={onLogout} style={{ marginBottom: 20 }}>
+      <button
+        onClick={() => {
+          // ✅ Stop camera stream on logout
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+          }
+          onLogout();
+        }}
+        style={{ marginBottom: 20 }}
+      >
         Logout
       </button>
 
