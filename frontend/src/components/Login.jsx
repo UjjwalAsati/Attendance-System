@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { auth } from '../firebaseConfig';
-import { signInWithEmailAndPassword } from 'firebase/auth';
 
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
@@ -9,11 +7,24 @@ export default function Login({ onLogin }) {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError(null);
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      onLogin(email);
+      const res = await fetch('http://localhost:3001/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        onLogin(email);
+      } else {
+        setError(data.message || 'Invalid credentials');
+      }
     } catch (err) {
-      setError(err.message);
+      setError('Server error, try again later');
     }
   };
 

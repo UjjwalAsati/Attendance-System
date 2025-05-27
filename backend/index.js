@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 
 const Attendance = require('./models/Attendance');
+const dealerRoutes = require('./routes/dealer');  // dealer routes
 
 const app = express();
 
@@ -16,6 +17,7 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
 
+// Attendance submission route
 app.post('/submit-attendance', async (req, res) => {
   try {
     const { email, timestamp, latitude, longitude, faceImageBase64 } = req.body;
@@ -39,6 +41,9 @@ app.post('/submit-attendance', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+// Use dealer routes at /api path
+app.use('/api', dealerRoutes);
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => console.log(`Backend running on port ${port}`));
