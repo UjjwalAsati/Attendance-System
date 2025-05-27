@@ -1,17 +1,29 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcrypt');
+const Dealer = require('../models/Dealer');
 
-// Hardcoded dealer credentials
-const DEALER_EMAIL = 'ujjwal5.asati5@gmail.com';
-const DEALER_PASSWORD = '123';
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email and password required' });
+    }
 
-router.post('/login', (req, res) => {
-  const { email, password } = req.body;
+    const dealer = await Dealer.findOne({ email });
+    if (!dealer) {
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    }
 
-  if (email === DEALER_EMAIL && password === DEALER_PASSWORD) {
-    return res.json({ success: true, message: 'Login successful' });
-  } else {
-    return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    const isMatch = await bcrypt.compare(password, dealer.passwordHash);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    }
+
+    res.json({ success: true, message: 'Login successful' });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 

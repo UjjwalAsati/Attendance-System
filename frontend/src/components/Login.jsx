@@ -10,7 +10,7 @@ export default function Login({ onLogin }) {
     setError(null);
 
     try {
-      const res = await fetch('http://localhost:3001/api/login', {
+      const res = await fetch('http://localhost:3001/login', {  // Removed /api prefix here
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

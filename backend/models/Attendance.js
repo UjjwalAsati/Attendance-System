@@ -1,11 +1,11 @@
 const mongoose = require('mongoose');
 
 const AttendanceSchema = new mongoose.Schema({
-  email: { type: String, required: true },
+  employeeName: { type: String, required: true },  // store employee name on attendance
   timestamp: { type: Date, required: true },
   latitude: { type: Number, required: true },
   longitude: { type: Number, required: true },
-  faceImageBase64: { type: String, required: true }
+  // No need to store faceImageBase64 here anymore
 });
 
 module.exports = mongoose.model('Attendance', AttendanceSchema);
