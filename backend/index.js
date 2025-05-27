@@ -10,7 +10,8 @@ const Employee = require('./models/Employee');
 const app = express();
 
 app.use(cors({ origin: 'http://localhost:5173' }));
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
+
 
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
