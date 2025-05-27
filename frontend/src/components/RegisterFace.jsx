@@ -14,7 +14,7 @@ export default function RegisterFace() {
         await Promise.all([
           faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
           faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)
+          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
         ]);
         setModelsLoaded(true);
         startCamera();
@@ -29,12 +29,35 @@ export default function RegisterFace() {
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+
+      console.log('Available cameras:', videoDevices);
+
+      // Try to find HP TrueVision HD Camera
+      const hpCamera = videoDevices.find(device =>
+        device.label.includes('HP TrueVision HD Camera')
+      );
+
+      const preferredDeviceId = hpCamera?.deviceId || videoDevices[0]?.deviceId;
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: preferredDeviceId ? { exact: preferredDeviceId } : undefined },
+      });
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play();
+        };
+      }
     } catch (err) {
       console.error('Camera error:', err);
-      setStatus('❌ Could not access camera.');
+      if (err.name === 'NotReadableError') {
+        setStatus('❌ Camera is in use by another app.');
+      } else {
+        setStatus('❌ Failed to start camera.');
+      }
     }
   };
 
@@ -42,6 +65,9 @@ export default function RegisterFace() {
     setStatus('');
     if (!modelsLoaded) {
       return setStatus('⚠️ Face models not loaded yet.');
+    }
+    if (!name.trim()) {
+      return setStatus('⚠️ Please enter a valid name.');
     }
 
     const detection = await faceapi

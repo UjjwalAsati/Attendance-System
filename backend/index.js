@@ -21,12 +21,13 @@ app.post('/register-face', async (req, res) => {
   try {
     const { name, faceDescriptor } = req.body;
 
-    if (!name || !faceDescriptor || faceDescriptor.length === 0) {
-  return res.status(400).json({ error: 'Missing name or face descriptor or empty descriptor' });
-}
-
-
     console.log('Saving employee:', name);
+    console.log('faceDescriptor length:', faceDescriptor?.length);
+
+    if (!name || !faceDescriptor || faceDescriptor.length === 0) {
+      return res.status(400).json({ error: 'Missing name or face descriptor or empty descriptor' });
+    }
+
     const employee = new Employee({ name, faceDescriptor });
     await employee.save();
     console.log('✅ Employee saved successfully');

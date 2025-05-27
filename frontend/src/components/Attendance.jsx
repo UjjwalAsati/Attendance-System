@@ -6,7 +6,7 @@ export default function Attendance({ email, onLogout }) {
   const [loadingModels, setLoadingModels] = useState(true);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
-  const streamRef = useRef(null); // ✅ store stream
+  const streamRef = useRef(null);
 
   useEffect(() => {
     const loadModels = async () => {
@@ -18,19 +18,43 @@ export default function Attendance({ email, onLogout }) {
   }, []);
 
   useEffect(() => {
-    if (!loadingModels) {
-      navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
-        streamRef.current = stream; // ✅ store the stream
-        videoRef.current.srcObject = stream;
-      });
+    const startCamera = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(d => d.kind === 'videoinput');
 
-      // ✅ Cleanup function to stop the camera when component unmounts
-      return () => {
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
+        console.log('Available cameras:', videoDevices);
+
+        const laptopCamera = videoDevices.find(device =>
+          device.label.includes('HP TrueVision HD Camera')
+        );
+
+        const preferredDeviceId = laptopCamera?.deviceId || videoDevices[0]?.deviceId;
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: preferredDeviceId ? { exact: preferredDeviceId } : undefined },
+        });
+
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.onloadedmetadata = () => videoRef.current.play();
         }
-      };
+      } catch (err) {
+        console.error('Camera error:', err);
+        setMessage('❌ Camera error: ' + err.message);
+      }
+    };
+
+    if (!loadingModels) {
+      startCamera();
     }
+
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
   }, [loadingModels]);
 
   const handleCheckIn = async () => {
@@ -71,11 +95,7 @@ export default function Attendance({ email, onLogout }) {
       });
 
       const json = await response.json();
-      if (json.success) {
-        setMessage('Attendance recorded successfully!');
-      } else {
-        setMessage('Failed to record attendance.');
-      }
+      setMessage(json.success ? '✅ Attendance recorded successfully!' : '❌ Failed to record attendance.');
     } catch (err) {
       setMessage('Error: ' + err.message);
     }
@@ -83,19 +103,17 @@ export default function Attendance({ email, onLogout }) {
     setSending(false);
   };
 
+  const handleLogout = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
+    onLogout();
+  };
+
   return (
     <div>
       <h2>Welcome, {email}</h2>
-      <button
-        onClick={() => {
-          // ✅ Stop camera stream on logout
-          if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-          }
-          onLogout();
-        }}
-        style={{ marginBottom: 20 }}
-      >
+      <button onClick={handleLogout} style={{ marginBottom: 20 }}>
         Logout
       </button>
 
