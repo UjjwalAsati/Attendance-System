@@ -53,13 +53,13 @@ export default function RegisterFace() {
       return setStatus('😐 No face detected. Please try again.');
     }
 
-    const descriptor = Array.from(detection.descriptor);
+    const faceDescriptor = Array.from(detection.descriptor);
 
     try {
       const res = await fetch('http://localhost:3001/register-face', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, descriptor }),
+        body: JSON.stringify({ name, faceDescriptor }),
       });
 
       const data = await res.json();
