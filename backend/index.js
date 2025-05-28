@@ -16,21 +16,17 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connected'))
   .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// Register an employee face
+// Register employee face
 app.post('/register-face', async (req, res) => {
   try {
     const { name, faceDescriptor } = req.body;
 
-    console.log('Saving employee:', name);
-    console.log('faceDescriptor length:', faceDescriptor?.length);
-
     if (!name || !faceDescriptor || faceDescriptor.length === 0) {
-      return res.status(400).json({ error: 'Missing name or face descriptor or empty descriptor' });
+      return res.status(400).json({ error: 'Missing name or face descriptor' });
     }
 
     const employee = new Employee({ name, faceDescriptor });
     await employee.save();
-    console.log('✅ Employee saved successfully');
 
     res.json({ success: true, message: 'Face registered successfully' });
   } catch (error) {
@@ -39,7 +35,7 @@ app.post('/register-face', async (req, res) => {
   }
 });
 
-// Submit attendance by matching face descriptor
+// Submit attendance
 app.post('/submit-attendance', async (req, res) => {
   try {
     const { descriptor, timestamp, latitude, longitude } = req.body;
@@ -49,32 +45,50 @@ app.post('/submit-attendance', async (req, res) => {
     }
 
     const employees = await Employee.find();
+    let matchedEmployee = null;
 
-    const match = employees.find(emp => {
+    for (const emp of employees) {
       const dist = euclideanDistance(emp.faceDescriptor, descriptor);
-      return dist < 0.5; // adjust threshold as needed
-    });
+      if (dist < 0.5) {
+        matchedEmployee = emp;
+        break;
+      }
+    }
 
-    if (!match) {
+    if (!matchedEmployee) {
       return res.json({ success: false, message: 'Face not recognized' });
     }
 
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const alreadyMarked = await Attendance.findOne({
+      employeeName: matchedEmployee.name,
+      timestamp: { $gte: startOfDay, $lte: endOfDay }
+    });
+
+    if (alreadyMarked) {
+      return res.json({ success: false, message: 'Attendance already recorded today' });
+    }
+
     const attendance = new Attendance({
-      name: match.name,
+      employeeName: matchedEmployee.name,
       timestamp,
       latitude,
       longitude
     });
 
     await attendance.save();
-    res.json({ success: true, name: match.name });
+    res.json({ success: true, name: matchedEmployee.name, message: 'Attendance recorded successfully' });
   } catch (error) {
     console.error('❌ Error saving attendance:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// Hardcoded dealer credentials login route
+// Dealer login
 const DEALER_EMAIL = 'ujjwal5.asati5@gmail.com';
 const DEALER_PASSWORD = '123';
 
@@ -88,12 +102,10 @@ app.post('/login', (req, res) => {
   }
 });
 
-// Utility: Euclidean distance between two descriptors
 function euclideanDistance(d1, d2) {
   return Math.sqrt(d1.reduce((sum, val, i) => sum + Math.pow(val - d2[i], 2), 0));
 }
 
-// Optional: Debug endpoint to check all registered employees
 app.get('/all-employees', async (req, res) => {
   const employees = await Employee.find();
   res.json(employees);

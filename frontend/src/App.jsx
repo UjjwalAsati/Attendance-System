@@ -30,7 +30,7 @@ export default function App() {
         <button onClick={handleLogout} style={{ marginLeft: 'auto' }}>Logout</button>
       </div>
 
-      {view === 'attendance' && <Attendance email={userEmail} onLogout={handleLogout} />}
+      {view === 'attendance' && <Attendance onLogout={handleLogout} />}
       {view === 'register' && <RegisterFace />}
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as faceapi from 'face-api.js';
 
-export default function Attendance({ email, onLogout }) {
+export default function Attendance({ onLogout }) {
   const videoRef = useRef(null);
   const [loadingModels, setLoadingModels] = useState(true);
   const [message, setMessage] = useState('');
@@ -12,6 +12,8 @@ export default function Attendance({ email, onLogout }) {
     const loadModels = async () => {
       const MODEL_URL = '/models';
       await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+      await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
       setLoadingModels(false);
     };
     loadModels();
@@ -62,30 +64,28 @@ export default function Attendance({ email, onLogout }) {
     setSending(true);
 
     try {
-      const detection = await faceapi.detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions());
+      const detection = await faceapi
+        .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+
       if (!detection) {
         setMessage('No face detected, please try again.');
         setSending(false);
         return;
       }
 
-      const canvas = document.createElement('canvas');
-      canvas.width = videoRef.current.videoWidth;
-      canvas.height = videoRef.current.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-      const faceImageBase64 = canvas.toDataURL('image/jpeg');
+      const descriptor = Array.from(detection.descriptor);
 
       const position = await new Promise((res, rej) => {
         navigator.geolocation.getCurrentPosition(res, rej, { timeout: 10000 });
       });
 
       const data = {
-        email,
+        descriptor,
         timestamp: new Date().toISOString(),
         latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-        faceImageBase64,
+        longitude: position.coords.longitude
       };
 
       const response = await fetch('http://localhost:3001/submit-attendance', {
@@ -95,8 +95,9 @@ export default function Attendance({ email, onLogout }) {
       });
 
       const json = await response.json();
-      setMessage(json.success ? '✅ Attendance recorded successfully!' : '❌ Failed to record attendance.');
+      setMessage(json.success ? `✅ Attendance recorded for ${json.name}` : '❌ Failed to record attendance.');
     } catch (err) {
+      console.error('❌ Error:', err);
       setMessage('Error: ' + err.message);
     }
 
@@ -112,7 +113,7 @@ export default function Attendance({ email, onLogout }) {
 
   return (
     <div>
-      <h2>Welcome, {email}</h2>
+      <h2>Welcome to Attendance</h2>
       <button onClick={handleLogout} style={{ marginBottom: 20 }}>
         Logout
       </button>
