@@ -25,7 +25,7 @@ export default function Attendance({ onLogout }) {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(d => d.kind === 'videoinput');
 
-        console.log('Available cameras:', videoDevices);
+        console.log('📷 Available cameras:', videoDevices);
 
         const laptopCamera = videoDevices.find(device =>
           device.label.includes('HP TrueVision HD Camera')
@@ -43,7 +43,7 @@ export default function Attendance({ onLogout }) {
           videoRef.current.onloadedmetadata = () => videoRef.current.play();
         }
       } catch (err) {
-        console.error('Camera error:', err);
+        console.error('📷 Camera error:', err);
         setMessage('❌ Camera error: ' + err.message);
       }
     };
@@ -70,22 +70,32 @@ export default function Attendance({ onLogout }) {
         .withFaceDescriptor();
 
       if (!detection) {
-        setMessage('No face detected, please try again.');
+        setMessage('❌ No face detected, please try again.');
         setSending(false);
         return;
       }
 
       const descriptor = Array.from(detection.descriptor);
 
-      const position = await new Promise((res, rej) => {
-        navigator.geolocation.getCurrentPosition(res, rej, { timeout: 10000 });
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        });
       });
+
+      const { latitude, longitude } = position.coords;
+
+      console.log('📍 Detected location:', latitude, longitude);
+
+      const timestamp = new Date().toISOString();
 
       const data = {
         descriptor,
-        timestamp: new Date().toISOString(),
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude
+        timestamp,
+        latitude,
+        longitude
       };
 
       const response = await fetch('http://localhost:3001/submit-attendance', {
@@ -95,10 +105,25 @@ export default function Attendance({ onLogout }) {
       });
 
       const json = await response.json();
-      setMessage(json.success ? `✅ Attendance recorded for ${json.name}` : '❌ Failed to record attendance.');
+
+      if (json.success) {
+        const recordedTime = new Date(json.timestamp || new Date().toISOString());
+        const istTimeStr = recordedTime.toLocaleString('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          hour12: true,
+        });
+        setMessage(`✅ Attendance recorded for ${json.name} at ${istTimeStr}`);
+      } else {
+        setMessage(`ℹ️ ${json.message || 'Attendance not recorded.'}`);
+      }
+
     } catch (err) {
-      console.error('❌ Error:', err);
-      setMessage('Error: ' + err.message);
+      console.error('❌ Error during check-in:', err);
+      if (err.code === 1) {
+        setMessage('❌ Location permission denied.');
+      } else {
+        setMessage('❌ Error: ' + err.message);
+      }
     }
 
     setSending(false);
@@ -112,29 +137,20 @@ export default function Attendance({ onLogout }) {
   };
 
   return (
-    <div>
-      <h2>Welcome to Attendance</h2>
-      <button onClick={handleLogout} style={{ marginBottom: 20 }}>
-        Logout
-      </button>
-
+    <div className="attendance-container" style={{ textAlign: 'center', marginTop: '20px' }}>
+      <h2>Attendance Portal</h2>
       {loadingModels ? (
         <p>Loading face detection models...</p>
       ) : (
         <>
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            width="320"
-            height="240"
-            style={{ border: '1px solid black', marginBottom: 10 }}
-          />
-          <br />
-          <button onClick={handleCheckIn} disabled={sending}>
-            {sending ? 'Sending...' : 'Check-In Attendance'}
-          </button>
-          {message && <p>{message}</p>}
+          <video ref={videoRef} width="400" height="300" autoPlay muted style={{ border: '1px solid #ccc' }} />
+          <div style={{ marginTop: '10px' }}>
+            <button onClick={handleCheckIn} disabled={sending}>
+              {sending ? 'Processing...' : 'Mark Attendance'}
+            </button>
+            <button onClick={handleLogout} style={{ marginLeft: '10px' }}>Logout</button>
+          </div>
+          {message && <p style={{ marginTop: '10px' }}>{message}</p>}
         </>
       )}
     </div>

@@ -6,7 +6,6 @@ const DealerSchema = new mongoose.Schema({
   passwordHash: { type: String, required: true },
 });
 
-// Method to check password validity
 DealerSchema.methods.isValidPassword = async function(password) {
   return await bcrypt.compare(password, this.passwordHash);
 };
