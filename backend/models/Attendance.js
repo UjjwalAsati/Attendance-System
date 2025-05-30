@@ -5,7 +5,7 @@ const AttendanceSchema = new mongoose.Schema({
   timestamp: { type: Date, required: true },
   latitude: { type: Number, required: true },
   longitude: { type: Number, required: true },
-  
+  type: { type: String, enum: ['checkin', 'checkout'], required: true },
 });
 
 module.exports = mongoose.model('Attendance', AttendanceSchema);

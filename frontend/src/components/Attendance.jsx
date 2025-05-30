@@ -24,13 +24,9 @@ export default function Attendance({ onLogout }) {
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(d => d.kind === 'videoinput');
-
-        console.log('📷 Available cameras:', videoDevices);
-
         const laptopCamera = videoDevices.find(device =>
           device.label.includes('HP TrueVision HD Camera')
         );
-
         const preferredDeviceId = laptopCamera?.deviceId || videoDevices[0]?.deviceId;
 
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -59,7 +55,7 @@ export default function Attendance({ onLogout }) {
     };
   }, [loadingModels]);
 
-  const handleCheckIn = async () => {
+  const handleAttendance = async (type) => {
     setMessage('');
     setSending(true);
 
@@ -86,17 +82,9 @@ export default function Attendance({ onLogout }) {
       });
 
       const { latitude, longitude } = position.coords;
-
-      console.log('📍 Detected location:', latitude, longitude);
-
       const timestamp = new Date().toISOString();
 
-      const data = {
-        descriptor,
-        timestamp,
-        latitude,
-        longitude
-      };
+      const data = { descriptor, timestamp, latitude, longitude, type };
 
       const response = await fetch('http://localhost:3001/submit-attendance', {
         method: 'POST',
@@ -112,13 +100,13 @@ export default function Attendance({ onLogout }) {
           timeZone: 'Asia/Kolkata',
           hour12: true,
         });
-        setMessage(`✅ Attendance recorded for ${json.name} at ${istTimeStr}`);
+        setMessage(`✅ ${type === 'checkin' ? 'Check-in' : 'Checkout'} recorded for ${json.name} at ${istTimeStr}`);
       } else {
         setMessage(`ℹ️ ${json.message || 'Attendance not recorded.'}`);
       }
 
     } catch (err) {
-      console.error('❌ Error during check-in:', err);
+      console.error(`❌ Error during ${type}:`, err);
       if (err.code === 1) {
         setMessage('❌ Location permission denied.');
       } else {
@@ -145,8 +133,11 @@ export default function Attendance({ onLogout }) {
         <>
           <video ref={videoRef} width="400" height="300" autoPlay muted style={{ border: '1px solid #ccc' }} />
           <div style={{ marginTop: '10px' }}>
-            <button onClick={handleCheckIn} disabled={sending}>
-              {sending ? 'Processing...' : 'Mark Attendance'}
+            <button onClick={() => handleAttendance('checkin')} disabled={sending}>
+              {sending ? 'Processing...' : 'Check In'}
+            </button>
+            <button onClick={() => handleAttendance('checkout')} disabled={sending} style={{ marginLeft: '10px' }}>
+              {sending ? 'Processing...' : 'Check Out'}
             </button>
             <button onClick={handleLogout} style={{ marginLeft: '10px' }}>Logout</button>
           </div>
