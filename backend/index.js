@@ -2,6 +2,7 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const ExcelJS = require('exceljs');
 require('dotenv').config();
 
 const Attendance = require('./models/Attendance');
@@ -84,8 +85,8 @@ app.post('/submit-attendance', async (req, res) => {
       return res.json({ success: false, message: 'Face not recognized' });
     }
 
-    const centerLat = 22.7375932;
-    const centerLon = 76.01598;
+    const centerLat = 25.0288473;
+    const centerLon = 79.4928857;
     const distance = getDistanceInMeters(latitude, longitude, centerLat, centerLon);
 
     if (distance > 100) {
@@ -147,6 +148,47 @@ app.post('/login', (req, res) => {
 app.get('/all-employees', async (req, res) => {
   const employees = await Employee.find();
   res.json(employees);
+});
+
+app.get('/download-attendance', async (req, res) => {
+  try {
+    const records = await Attendance.find().sort({ timestamp: -1 });
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Attendance');
+
+    sheet.columns = [
+      { header: 'Employee Name', key: 'employeeName', width: 25 },
+      { header: 'Type', key: 'type', width: 12 },
+      { header: 'Timestamp (IST)', key: 'timestamp', width: 30 },
+      { header: 'Latitude', key: 'latitude', width: 15 },
+      { header: 'Longitude', key: 'longitude', width: 15 }
+    ];
+
+    for (const record of records) {
+      const istTime = new Date(record.timestamp).toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        hour12: true
+      });
+
+      sheet.addRow({
+        employeeName: record.employeeName,
+        type: record.type,
+        timestamp: istTime,
+        latitude: record.latitude,
+        longitude: record.longitude
+      });
+    }
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=attendance.xlsx');
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('❌ Error exporting Excel:', error);
+    res.status(500).send('Error generating Excel');
+  }
 });
 
 const port = process.env.PORT || 3001;

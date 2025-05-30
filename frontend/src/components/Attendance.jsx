@@ -117,6 +117,22 @@ export default function Attendance({ onLogout }) {
     setSending(false);
   };
 
+  const handleDownloadExcel = async () => {
+    try {
+      const res = await fetch('http://localhost:3001/download-attendance');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'attendance.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (error) {
+      console.error('❌ Error downloading Excel:', error);
+    }
+  };
+
   const handleLogout = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
@@ -138,6 +154,9 @@ export default function Attendance({ onLogout }) {
             </button>
             <button onClick={() => handleAttendance('checkout')} disabled={sending} style={{ marginLeft: '10px' }}>
               {sending ? 'Processing...' : 'Check Out'}
+            </button>
+            <button onClick={handleDownloadExcel} style={{ marginLeft: '10px' }}>
+              📥 Export to Excel
             </button>
             <button onClick={handleLogout} style={{ marginLeft: '10px' }}>Logout</button>
           </div>
