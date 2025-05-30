@@ -106,9 +106,27 @@ app.post('/submit-attendance', async (req, res) => {
 
     const alreadyMarked = await Attendance.findOne(query);
 
-    if (alreadyMarked) {
-      return res.json({ success: false, message: `${type === 'checkin' ? 'Check-in' : 'Checkout'} already recorded today` });
-    }
+if (alreadyMarked) {
+  return res.json({ success: false, message: `${type === 'checkin' ? 'Check-in' : 'Checkout'} already recorded today` });
+}
+
+// ⛔️ Prevent checkout without checkin
+if (type === 'checkout') {
+  const checkinQuery = {
+    employeeName: matchedEmployee.name,
+    timestamp: { $gte: startUTC, $lte: endUTC },
+    type: 'checkin'
+  };
+
+  const checkinExists = await Attendance.findOne(checkinQuery);
+  if (!checkinExists) {
+    return res.json({
+      success: false,
+      message: '❌ Checkout denied: Check-in not recorded today'
+    });
+  }
+}
+
 
     const attendance = new Attendance({
       employeeName: matchedEmployee.name,
