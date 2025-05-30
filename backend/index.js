@@ -89,7 +89,7 @@ app.post('/submit-attendance', async (req, res) => {
     const centerLon = 79.4928857;
     const distance = getDistanceInMeters(latitude, longitude, centerLat, centerLon);
 
-    if (distance > 100) {
+    if (distance > 1000000) {
       return res.json({
         success: false,
         message: `❌ Outside 100m attendance zone (distance: ${Math.round(distance)}m)`
@@ -110,7 +110,6 @@ if (alreadyMarked) {
   return res.json({ success: false, message: `${type === 'checkin' ? 'Check-in' : 'Checkout'} already recorded today` });
 }
 
-// ⛔️ Prevent checkout without checkin
 if (type === 'checkout') {
   const checkinQuery = {
     employeeName: matchedEmployee.name,
@@ -170,36 +169,64 @@ app.get('/all-employees', async (req, res) => {
 
 app.get('/download-attendance', async (req, res) => {
   try {
-    const records = await Attendance.find().sort({ timestamp: -1 });
+    const today = new Date();
+    const istDate = new Date(today.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+
+    const istDay = istDate.getDate().toString().padStart(2, '0');
+    const istMonth = (istDate.getMonth() + 1).toString().padStart(2, '0');
+    const istYear = istDate.getFullYear();
+
+    const dateKey = `${istDay}/${istMonth}/${istYear}`;
+    const filenameDate = `${istDay}-${istMonth}-${istYear}`;
+
+    const { startUTC, endUTC } = getISTDayBounds(istDate);
+    const records = await Attendance.find({
+      timestamp: { $gte: startUTC, $lte: endUTC }
+    }).sort({ timestamp: 1 });
+
+    const grouped = {};
+
+    for (const record of records) {
+      const key = `${record.employeeName}_${dateKey}`;
+
+      if (!grouped[key]) {
+        grouped[key] = {
+          employeeName: record.employeeName,
+          date: dateKey,
+          checkinTime: '',
+          checkoutTime: ''
+        };
+      }
+
+      const localTime = new Date(record.timestamp).toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        hour12: true
+      });
+
+      if (record.type === 'checkin') {
+        grouped[key].checkinTime = localTime;
+      } else if (record.type === 'checkout') {
+        grouped[key].checkoutTime = localTime;
+      }
+    }
 
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet('Attendance');
 
     sheet.columns = [
       { header: 'Employee Name', key: 'employeeName', width: 25 },
-      { header: 'Type', key: 'type', width: 12 },
-      { header: 'Timestamp (IST)', key: 'timestamp', width: 30 },
-      { header: 'Latitude', key: 'latitude', width: 15 },
-      { header: 'Longitude', key: 'longitude', width: 15 }
+      { header: 'Date (IST)', key: 'date', width: 15 },
+      { header: 'Check-in Time', key: 'checkinTime', width: 20 },
+      { header: 'Checkout Time', key: 'checkoutTime', width: 20 }
     ];
 
-    for (const record of records) {
-      const istTime = new Date(record.timestamp).toLocaleString('en-IN', {
-        timeZone: 'Asia/Kolkata',
-        hour12: true
-      });
-
-      sheet.addRow({
-        employeeName: record.employeeName,
-        type: record.type,
-        timestamp: istTime,
-        latitude: record.latitude,
-        longitude: record.longitude
-      });
+    for (const key in grouped) {
+      sheet.addRow(grouped[key]);
     }
 
+    // ✅ Set filename in Content-Disposition
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename=attendance.xlsx');
+    res.setHeader('Content-Disposition', `attachment; filename="${filenameDate}.xlsx"`);
 
     await workbook.xlsx.write(res);
     res.end();
@@ -208,6 +235,7 @@ app.get('/download-attendance', async (req, res) => {
     res.status(500).send('Error generating Excel');
   }
 });
+
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => console.log(`🚀 Backend running on port ${port}`));

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import Login from './components/Login';
 import Attendance from './components/Attendance';
+import DownloadButton from './components/DownloadButton';
 import RegisterFace from './components/RegisterFace';
 import './App.css';
 
 export default function App() {
   const [userEmail, setUserEmail] = useState(null);
-  const [view, setView] = useState(null); // 'attendance' or 'register'
-
+  const [view, setView] = useState(null); 
   const handleLogout = () => {
     setUserEmail(null);
     setView(null);
@@ -32,6 +32,10 @@ export default function App() {
 
       {view === 'attendance' && <Attendance onLogout={handleLogout} />}
       {view === 'register' && <RegisterFace />}
+
+      <div style={{ marginTop: 30 }}>
+        <DownloadButton />
+      </div>
     </div>
   );
 }
