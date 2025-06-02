@@ -7,9 +7,7 @@ async function addDealer() {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
 
-    const email = 'ujjwal5.asati5@gmail.com';         // Change this to your dealer email
-    const password = '123';   // Change this to your password
-
+    
     // Check if dealer already exists
     const existing = await Dealer.findOne({ email });
     if (existing) {

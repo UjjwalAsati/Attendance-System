@@ -46,6 +46,20 @@ function getDistanceInMeters(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+app.post('/register-face', async (req, res) => {
+  try {
+    const { name, faceDescriptor } = req.body;
+    if (!name || !faceDescriptor || faceDescriptor.length === 0) {
+      return res.status(400).json({ error: 'Missing name or face descriptor' });
+    }
+    const employee = new Employee({ name, faceDescriptor });
+    await employee.save();
+    res.json({ success: true, message: 'Face registered successfully' });
+  } catch (error) {
+    console.error('❌ Error registering face:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 app.post('/submit-attendance', async (req, res) => {
   try {
     const { descriptor, timestamp, latitude, longitude, type } = req.body;
@@ -139,9 +153,9 @@ app.post('/submit-attendance', async (req, res) => {
   }
 });
 
+const DEALER_EMAIL = process.env.DEALER_EMAIL;
+const DEALER_PASSWORD = process.env.DEALER_PASSWORD;
 
-const DEALER_EMAIL = 'ujjwal5.asati5@gmail.com';
-const DEALER_PASSWORD = '123';
 
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
@@ -224,7 +238,8 @@ app.get('/download-attendance', async (req, res) => {
       const headerRow = sheet.addRow(['Employee Name', 'Check-in', 'Check-out']);
       headerRow.font = { bold: true };
 
-      for (const [employeeName, times] of Object.entries(employees)) {
+      for (const employeeName of Object.keys(employees).sort()) {
+        const times = employees[employeeName];
         sheet.addRow({
           employeeName,
           checkin: times.checkin || '',
