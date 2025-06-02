@@ -1,4 +1,3 @@
-// index.js
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
@@ -16,9 +15,8 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connected'))
   .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// Helper: Get IST day bounds as UTC dates for querying MongoDB
 function getISTDayBounds(date) {
-  const istOffsetMs = 5.5 * 60 * 60 * 1000; // IST is UTC + 5:30
+  const istOffsetMs = 5.5 * 60 * 60 * 1000;
   const localDate = new Date(date.getTime() + istOffsetMs);
   const startOfDay = new Date(localDate);
   startOfDay.setHours(0, 0, 0, 0);
@@ -48,11 +46,11 @@ function getDistanceInMeters(lat1, lon1, lat2, lon2) {
 
 app.post('/register-face', async (req, res) => {
   try {
-    const { name, faceDescriptor } = req.body;
-    if (!name || !faceDescriptor || faceDescriptor.length === 0) {
-      return res.status(400).json({ error: 'Missing name or face descriptor' });
+    const { name, faceDescriptor, username } = req.body;
+    if (!name || !faceDescriptor || faceDescriptor.length === 0 || !username) {
+      return res.status(400).json({ error: 'Missing name, username or face descriptor' });
     }
-    const employee = new Employee({ name, faceDescriptor });
+    const employee = new Employee({ name, faceDescriptor, username });
     await employee.save();
     res.json({ success: true, message: 'Face registered successfully' });
   } catch (error) {
@@ -60,6 +58,7 @@ app.post('/register-face', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 app.post('/submit-attendance', async (req, res) => {
   try {
     const { descriptor, timestamp, latitude, longitude, type } = req.body;
@@ -96,11 +95,9 @@ app.post('/submit-attendance', async (req, res) => {
       });
     }
 
-    // Convert the timestamp to Date object
     const submittedDate = new Date(timestamp);
     const { startUTC, endUTC } = getISTDayBounds(submittedDate);
 
-    // Check if the same type already recorded today (checkin or checkout)
     const existingSameType = await Attendance.findOne({
       employeeName: matchedEmployee.name,
       type,
@@ -115,7 +112,6 @@ app.post('/submit-attendance', async (req, res) => {
     }
 
     if (type === 'checkout') {
-      // Ensure a checkin exists today before allowing checkout
       const checkinToday = await Attendance.findOne({
         employeeName: matchedEmployee.name,
         type: 'checkin',
@@ -132,6 +128,7 @@ app.post('/submit-attendance', async (req, res) => {
 
     const attendance = new Attendance({
       employeeName: matchedEmployee.name,
+      username: matchedEmployee.username,
       timestamp: submittedDate,
       latitude,
       longitude,
@@ -156,7 +153,6 @@ app.post('/submit-attendance', async (req, res) => {
 const DEALER_EMAIL = process.env.DEALER_EMAIL;
 const DEALER_PASSWORD = process.env.DEALER_PASSWORD;
 
-
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
   if (email === DEALER_EMAIL && password === DEALER_PASSWORD) {
@@ -170,9 +166,13 @@ app.get('/all-employees', async (req, res) => {
   const employees = await Employee.find();
   res.json(employees);
 });
+
 app.get('/download-attendance', async (req, res) => {
   try {
-    const records = await Attendance.find().sort({ timestamp: 1 });
+    const { username } = req.query;
+    const query = username ? { username } : {};
+
+    const records = await Attendance.find(query).sort({ timestamp: 1 });
 
     const grouped = {};
 
@@ -248,7 +248,7 @@ app.get('/download-attendance', async (req, res) => {
       }
     }
 
-    const filename = `attendance_all_dates.xlsx`;
+    const filename = `attendance_${username || 'all'}_dates.xlsx`;
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);

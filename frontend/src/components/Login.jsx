@@ -10,7 +10,7 @@ export default function Login({ onLogin }) {
     setError(null);
 
     try {
-      const res = await fetch('http://localhost:3001/login', {  // Removed /api prefix here
+      const res = await fetch('http://localhost:3001/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -19,7 +19,9 @@ export default function Login({ onLogin }) {
       const data = await res.json();
 
       if (data.success) {
-        onLogin(email);
+        // Save email as username in localStorage
+        localStorage.setItem('username', email);
+        onLogin(email);  // pass email up as username
       } else {
         setError(data.message || 'Invalid credentials');
       }
