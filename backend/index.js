@@ -84,11 +84,11 @@ app.post('/submit-attendance', async (req, res) => {
       return res.json({ success: false, message: 'Face not recognized' });
     }
 
-    const centerLat = 25.0288473;
-    const centerLon = 79.4928857;
+    const centerLat = 25.0478592;
+    const centerLon = 79.4492928;
     const distance = getDistanceInMeters(latitude, longitude, centerLat, centerLon);
 
-    if (distance > 10000000) {
+    if (distance > 100) {
       return res.json({
         success: false,
         message: `❌ Outside 100m attendance zone (distance: ${Math.round(distance)}m)`
@@ -173,21 +173,48 @@ app.get('/download-attendance', async (req, res) => {
     const query = username ? { username } : {};
 
     const records = await Attendance.find(query).sort({ timestamp: 1 });
+    const allEmployees = await Employee.find(username ? { username } : {});
 
+    if (records.length === 0) {
+      return res.status(404).send('No attendance records found.');
+    }
+
+    // Get full date range from earliest to latest attendance record
+    const startDate = new Date(records[0].timestamp);
+    const endDate = new Date(records[records.length - 1].timestamp);
+
+    const istOffsetMs = 5.5 * 60 * 60 * 1000;
+    const dateList = [];
+
+    const cur = new Date(startDate.getTime() + istOffsetMs);
+    cur.setUTCHours(0, 0, 0, 0);
+
+    while (cur <= endDate) {
+      const dateStr = new Date(cur.getTime() - istOffsetMs).toISOString().split('T')[0];
+      dateList.push(dateStr);
+      cur.setUTCDate(cur.getUTCDate() + 1);
+    }
+
+    // Ensure today's IST date is included
+    const todayIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+    const todayYMD = todayIST.toISOString().split('T')[0];
+    if (!dateList.includes(todayYMD)) {
+      dateList.push(todayYMD);
+    }
+
+    // Initialize grouped structure with Absent for all dates and employees
     const grouped = {};
-
-    for (const record of records) {
-      const istDateObj = new Date(record.timestamp.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-      const dayName = istDateObj.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'Asia/Kolkata' });
-      const day = istDateObj.getDate().toString().padStart(2, '0');
-      const month = (istDateObj.getMonth() + 1).toString().padStart(2, '0');
-      const year = istDateObj.getFullYear();
-      const dateKey = `${dayName}, ${day}-${month}-${year}`;
-
-      if (!grouped[dateKey]) grouped[dateKey] = {};
-      if (!grouped[dateKey][record.employeeName]) {
-        grouped[dateKey][record.employeeName] = { checkin: null, checkout: null };
+    for (const date of dateList) {
+      grouped[date] = {};
+      for (const emp of allEmployees) {
+        grouped[date][emp.name] = { checkin: 'Absent', checkout: 'Absent' };
       }
+    }
+
+    // Fill in actual checkins/checkouts
+    for (const record of records) {
+      const istDate = new Date(record.timestamp.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+      const dateStr = istDate.toISOString().split('T')[0];
 
       const localTime = new Date(record.timestamp).toLocaleTimeString('en-IN', {
         timeZone: 'Asia/Kolkata',
@@ -197,13 +224,27 @@ app.get('/download-attendance', async (req, res) => {
         second: '2-digit',
       });
 
+      if (!grouped[dateStr]) grouped[dateStr] = {};
+      if (!grouped[dateStr][record.employeeName]) {
+        grouped[dateStr][record.employeeName] = { checkin: 'Absent', checkout: 'Absent' };
+      }
+
       if (record.type === 'checkin') {
-        if (!grouped[dateKey][record.employeeName].checkin || localTime < grouped[dateKey][record.employeeName].checkin) {
-          grouped[dateKey][record.employeeName].checkin = localTime;
-        }
+        grouped[dateStr][record.employeeName].checkin = localTime;
       } else if (record.type === 'checkout') {
-        if (!grouped[dateKey][record.employeeName].checkout || localTime > grouped[dateKey][record.employeeName].checkout) {
-          grouped[dateKey][record.employeeName].checkout = localTime;
+        grouped[dateStr][record.employeeName].checkout = localTime;
+      }
+    }
+
+    // === Minimal addition: replace 'Absent' with 'Not given' if other is present ===
+    for (const date of dateList) {
+      for (const empName in grouped[date]) {
+        const attendance = grouped[date][empName];
+        if (attendance.checkin !== 'Absent' && attendance.checkout === 'Absent') {
+          attendance.checkout = 'Not given';
+        }
+        if (attendance.checkout !== 'Absent' && attendance.checkin === 'Absent') {
+          attendance.checkin = 'Not given';
         }
       }
     }
@@ -223,44 +264,51 @@ app.get('/download-attendance', async (req, res) => {
       fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCE6F1' } },
     };
 
-    for (const [dateKey, employees] of Object.entries(grouped)) {
-      if (sheet.rowCount > 1) {
-        sheet.addRow([]);
-      }
+    for (const date of dateList) {
+      const d = new Date(`${date}T00:00:00`);
+      const dayName = d.toLocaleDateString('en-IN', { weekday: 'long', timeZone: 'Asia/Kolkata' });
+      const dd = d.getDate().toString().padStart(2, '0');
+      const mm = (d.getMonth() + 1).toString().padStart(2, '0');
+      const yyyy = d.getFullYear();
+      const dateKey = `${dayName}, ${dd}-${mm}-${yyyy}`;
+
+      if (sheet.rowCount > 1) sheet.addRow([]);
 
       const dateRow = sheet.addRow([dateKey]);
       dateRow.font = dateHeaderStyle.font;
       dateRow.alignment = dateHeaderStyle.alignment;
       dateRow.fill = dateHeaderStyle.fill;
-
       sheet.mergeCells(`A${dateRow.number}:C${dateRow.number}`);
 
       const headerRow = sheet.addRow(['Employee Name', 'Check-in', 'Check-out']);
       headerRow.font = { bold: true };
 
-      for (const employeeName of Object.keys(employees).sort()) {
-        const times = employees[employeeName];
+      const employees = grouped[date];
+      const sortedNames = Object.keys(employees).sort();
+
+      for (const name of sortedNames) {
+        const { checkin, checkout } = employees[name];
         sheet.addRow({
-          employeeName,
-          checkin: times.checkin || '',
-          checkout: times.checkout || '',
+          employeeName: name,
+          checkin: checkin || 'Not given',
+          checkout: checkout || 'Not given',
         });
       }
     }
 
-    const filename = `attendance_${username || 'all'}_dates.xlsx`;
+    const filename = `attendance_${username || 'all'}_fullrange.xlsx`;
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
     await workbook.xlsx.write(res);
     res.end();
-
   } catch (error) {
     console.error('Error exporting Excel:', error);
     res.status(500).send('Error generating Excel');
   }
 });
+
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => console.log(`🚀 Backend running on port ${port}`));
