@@ -6,7 +6,6 @@ import './App.css';
 
 export default function App() {
   const [userEmail, setUserEmail] = useState(() => {
-    // On initial load, try to get username from localStorage
     return localStorage.getItem('username') || null;
   });
   const [view, setView] = useState(null);
@@ -22,7 +21,7 @@ export default function App() {
   const handleLogout = () => {
     setUserEmail(null);
     setView(null);
-    localStorage.removeItem('username'); // extra safety
+    localStorage.removeItem('username');
   };
 
   if (!userEmail) {
@@ -36,7 +35,7 @@ export default function App() {
   return (
     <div style={{ maxWidth: 600, margin: 'auto', padding: 20 }}>
       <h2>Welcome, {userEmail}</h2>
-      <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
         <button onClick={() => setView('attendance')}>Take Attendance</button>
         <button onClick={() => setView('register')}>Register New Employee</button>
         <button onClick={handleLogout} style={{ marginLeft: 'auto' }}>

@@ -77,7 +77,7 @@ export default function Attendance({ onLogout }) {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
           enableHighAccuracy: true,
           timeout: 10000,
-          maximumAge: 0
+          maximumAge: 0,
         });
       });
 
@@ -104,7 +104,6 @@ export default function Attendance({ onLogout }) {
       } else {
         setMessage(`ℹ️ ${json.message || 'Attendance not recorded.'}`);
       }
-
     } catch (err) {
       console.error(`❌ Error during ${type}:`, err);
       if (err.code === 1) {
@@ -117,9 +116,16 @@ export default function Attendance({ onLogout }) {
     setSending(false);
   };
 
+  const handleDownloadOverview = () => {
+    const username = localStorage.getItem('username');
+    const url = `http://localhost:3001/download-overview?username=${encodeURIComponent(username)}`;
+    window.open(url, '_blank');
+  };
+
   const handleDownloadExcel = async () => {
     try {
       const res = await fetch('http://localhost:3001/download-attendance');
+      if (!res.ok) throw new Error('Network response was not ok');
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -128,8 +134,10 @@ export default function Attendance({ onLogout }) {
       document.body.appendChild(a);
       a.click();
       a.remove();
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('❌ Error downloading Excel:', error);
+      setMessage('❌ Error downloading Excel.');
     }
   };
 
@@ -147,7 +155,14 @@ export default function Attendance({ onLogout }) {
         <p>Loading face detection models...</p>
       ) : (
         <>
-          <video ref={videoRef} width="400" height="300" autoPlay muted style={{ border: '1px solid #ccc' }} />
+          <video
+            ref={videoRef}
+            width="400"
+            height="300"
+            autoPlay
+            muted
+            style={{ border: '1px solid #ccc' }}
+          />
           <div style={{ marginTop: '10px' }}>
             <button onClick={() => handleAttendance('checkin')} disabled={sending}>
               {sending ? 'Processing...' : 'Check In'}
@@ -156,9 +171,14 @@ export default function Attendance({ onLogout }) {
               {sending ? 'Processing...' : 'Check Out'}
             </button>
             <button onClick={handleDownloadExcel} style={{ marginLeft: '10px' }}>
-              📥 Export to Excel
+              📥 Export Attendance Excel
             </button>
-            <button onClick={handleLogout} style={{ marginLeft: '10px' }}>Logout</button>
+            <button onClick={handleDownloadOverview} style={{ marginLeft: '10px' }}>
+              📥 Download Overview
+            </button>
+            <button onClick={handleLogout} style={{ marginLeft: '10px' }}>
+              Logout
+            </button>
           </div>
           {message && <p style={{ marginTop: '10px' }}>{message}</p>}
         </>

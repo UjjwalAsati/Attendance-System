@@ -88,7 +88,7 @@ app.post('/submit-attendance', async (req, res) => {
     const centerLon = 79.4492928;
     const distance = getDistanceInMeters(latitude, longitude, centerLat, centerLon);
 
-    if (distance > 100) {
+    if (distance > 10000000) {
       return res.json({
         success: false,
         message: `❌ Outside 100m attendance zone (distance: ${Math.round(distance)}m)`
@@ -179,7 +179,11 @@ app.get('/download-attendance', async (req, res) => {
       return res.status(404).send('No attendance records found.');
     }
 
-    // Get full date range from earliest to latest attendance record
+    // Use current date to get month and year, like overview route
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth(); // 0-based
+
     const startDate = new Date(records[0].timestamp);
     const endDate = new Date(records[records.length - 1].timestamp);
 
@@ -195,14 +199,12 @@ app.get('/download-attendance', async (req, res) => {
       cur.setUTCDate(cur.getUTCDate() + 1);
     }
 
-    // Ensure today's IST date is included
     const todayIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
     const todayYMD = todayIST.toISOString().split('T')[0];
     if (!dateList.includes(todayYMD)) {
       dateList.push(todayYMD);
     }
 
-    // Initialize grouped structure with Absent for all dates and employees
     const grouped = {};
     for (const date of dateList) {
       grouped[date] = {};
@@ -211,7 +213,6 @@ app.get('/download-attendance', async (req, res) => {
       }
     }
 
-    // Fill in actual checkins/checkouts
     for (const record of records) {
       const istDate = new Date(record.timestamp.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
       const dateStr = istDate.toISOString().split('T')[0];
@@ -236,7 +237,6 @@ app.get('/download-attendance', async (req, res) => {
       }
     }
 
-    // === Minimal addition: replace 'Absent' with 'Not given' if other is present ===
     for (const date of dateList) {
       for (const empName in grouped[date]) {
         const attendance = grouped[date][empName];
@@ -296,7 +296,8 @@ app.get('/download-attendance', async (req, res) => {
       }
     }
 
-    const filename = `attendance_${username || 'all'}_fullrange.xlsx`;
+    const monthName = now.toLocaleString('en-IN', { month: 'long' });
+    const filename = `attendance_${username || 'all'}_${monthName}_${year}_fullrange.xlsx`;
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -308,6 +309,121 @@ app.get('/download-attendance', async (req, res) => {
     res.status(500).send('Error generating Excel');
   }
 });
+
+
+app.get('/download-overview', async (req, res) => {
+  try {
+    const { username } = req.query;
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const today = now.getDate();
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+
+    const allEmployees = await Employee.find(username ? { username } : {}).sort({ name: 1 });
+
+    const attendanceRecords = await Attendance.find({
+      timestamp: { $gte: firstDay, $lte: lastDay },
+      ...(username && { username }),
+    });
+
+    const grouped = {};
+    for (const emp of allEmployees) {
+      grouped[emp.name] = {};
+      for (let d = 1; d <= daysInMonth; d++) {
+        grouped[emp.name][d] = d <= today ? 'A' : '';
+      }
+    }
+
+    for (const record of attendanceRecords) {
+      const istDate = new Date(record.timestamp.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+      const day = istDate.getDate();
+      const empName = record.employeeName;
+      if (grouped[empName] && day <= today) {
+        grouped[empName][day] = 'P';
+      }
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Monthly Overview');
+
+    const monthName = now.toLocaleString('en-IN', { month: 'long' });
+    const headingCell = sheet.getCell('A1');
+    headingCell.value = `${monthName} ${year}`;
+    headingCell.font = { bold: true, size: 16 };
+    headingCell.alignment = { horizontal: 'center' };
+    sheet.mergeCells(1, 1, 1, daysInMonth + 2);
+
+    const headerRow = ['Employee Name'];
+    for (let d = 1; d <= daysInMonth; d++) {
+      headerRow.push(d);
+    }
+    headerRow.push(`Total P / ${today}`);
+    const header = sheet.addRow(headerRow);
+    header.font = { bold: true };
+    header.alignment = { horizontal: 'center' };
+
+    for (const emp of allEmployees) {
+      const name = emp.name;
+      const row = [name];
+      let presentCount = 0;
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const status = grouped[name]?.[d] || '';
+        row.push(status);
+        if (d <= today && status === 'P') {
+          presentCount++;
+        }
+      }
+
+      row.push(`${presentCount} / ${today}`);
+      sheet.addRow(row);
+    }
+
+    sheet.getColumn(1).width = 30;
+    for (let col = 2; col <= daysInMonth + 1; col++) {
+      sheet.getColumn(col).width = 5;
+      sheet.getColumn(col).alignment = { horizontal: 'center' };
+    }
+    sheet.getColumn(daysInMonth + 2).width = 15;
+    sheet.getColumn(daysInMonth + 2).alignment = { horizontal: 'center' };
+
+    for (let rowIndex = 3; rowIndex <= sheet.rowCount; rowIndex++) {
+      const row = sheet.getRow(rowIndex);
+      for (let colIndex = 2; colIndex <= daysInMonth + 1; colIndex++) {
+        const cell = row.getCell(colIndex);
+        if (cell.value === 'P') {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFC6EFCE' }
+          };
+        } else if (cell.value === 'A') {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFC7CE' }
+          };
+        }
+      }
+    }
+
+    const filename = `monthly_overview_${username || 'all'}_${month + 1}_${year}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error('Error exporting monthly overview:', err);
+    res.status(500).send('Failed to generate overview Excel');
+  }
+});
+
+
+
 
 
 const port = process.env.PORT || 3001;
