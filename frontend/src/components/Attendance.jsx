@@ -116,38 +116,6 @@ export default function Attendance({ onLogout }) {
     setSending(false);
   };
 
-  const handleDownloadOverview = () => {
-    const username = localStorage.getItem('username');
-    const url = `http://localhost:3001/download-overview?username=${encodeURIComponent(username)}`;
-    window.open(url, '_blank');
-  };
-
-  const handleDownloadExcel = async () => {
-    try {
-      const res = await fetch('http://localhost:3001/download-attendance');
-      if (!res.ok) throw new Error('Network response was not ok');
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'attendance.xlsx';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('❌ Error downloading Excel:', error);
-      setMessage('❌ Error downloading Excel.');
-    }
-  };
-
-  const handleLogout = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-    }
-    onLogout();
-  };
-
   return (
     <div className="attendance-container" style={{ textAlign: 'center', marginTop: '20px' }}>
       <h2>Attendance Portal</h2>
@@ -163,21 +131,18 @@ export default function Attendance({ onLogout }) {
             muted
             style={{ border: '1px solid #ccc' }}
           />
-          <div style={{ marginTop: '10px' }}>
+          <div style={{
+            marginTop: '15px',
+            display: 'flex',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+            gap: '10px'
+          }}>
             <button onClick={() => handleAttendance('checkin')} disabled={sending}>
               {sending ? 'Processing...' : 'Check In'}
             </button>
-            <button onClick={() => handleAttendance('checkout')} disabled={sending} style={{ marginLeft: '10px' }}>
+            <button onClick={() => handleAttendance('checkout')} disabled={sending}>
               {sending ? 'Processing...' : 'Check Out'}
-            </button>
-            <button onClick={handleDownloadExcel} style={{ marginLeft: '10px' }}>
-              📥 Export Attendance Excel
-            </button>
-            <button onClick={handleDownloadOverview} style={{ marginLeft: '10px' }}>
-              📥 Download Overview
-            </button>
-            <button onClick={handleLogout} style={{ marginLeft: '10px' }}>
-              Logout
             </button>
           </div>
           {message && <p style={{ marginTop: '10px' }}>{message}</p>}
