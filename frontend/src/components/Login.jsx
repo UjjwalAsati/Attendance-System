@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-const DEVICE_TOKEN = import.meta.env.VITE_DEVICE_AUTH_TOKEN;
-
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -10,7 +8,7 @@ export default function Login({ onLogin }) {
 
   useEffect(() => {
     const token = localStorage.getItem('authorizedDeviceToken');
-    setDeviceAuthorized(token === DEVICE_TOKEN);
+    setDeviceAuthorized(token === 'jatashankar-2025-token-01'); 
   }, []);
 
   const handleLogin = async (e) => {
@@ -47,7 +45,11 @@ export default function Login({ onLogin }) {
       <div style={{ maxWidth: 400, margin: 'auto', padding: 20 }}>
         <h2>Device Not Authorized</h2>
         <p style={{ color: 'red' }}>You must authorize this device before logging in.</p>
-        <p>Go to the <strong>Authorize Device</strong> section after login to enter the secret token.</p>
+        <p>Open browser console and paste:</p>
+        <pre style={{ background: '#eee', padding: '10px' }}>
+          localStorage.setItem('authorizedDeviceToken', 'jatashankar-2025-token-01')
+        </pre>
+        <p>Then refresh the page.</p>
       </div>
     );
   }
