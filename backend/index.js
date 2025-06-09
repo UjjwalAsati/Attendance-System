@@ -164,29 +164,30 @@ app.get('/download-attendance', async (req, res) => {
     const month = now.getMonth();
 
     const firstOfMonth = new Date(year, month, 1);
-    const startDate = new Date(firstOfMonth);
-    startDate.setDate(0);
-    const day2 = new Date(startDate);
-    const day1 = new Date(startDate);
-    day1.setDate(day2.getDate() - 1);
-    day1.setHours(0, 0, 0, 0);
+    const lastMonth = new Date(firstOfMonth);
+    lastMonth.setDate(0);
+    const day2 = new Date(lastMonth);
+    const day1 = new Date(lastMonth);
+    day1.setDate(lastMonth.getDate() - 1);
 
-    const endDate = new Date();
-    endDate.setHours(23, 59, 59, 999);
+    const startDate = new Date(day1.setHours(0, 0, 0, 0));
+    const endDate = new Date(now.setHours(23, 59, 59, 999));
 
     const records = await Attendance.find({
       ...query,
-      timestamp: { $gte: day1, $lte: endDate }
+      timestamp: { $gte: startDate, $lte: endDate }
     }).sort({ timestamp: 1 });
 
     const allEmployees = await Employee.find(query);
+
     if (records.length === 0) {
       return res.status(404).send('No attendance records found.');
     }
 
     const istOffsetMs = 5.5 * 60 * 60 * 1000;
     const dateList = [];
-    const cur = new Date(day1.getTime() + istOffsetMs);
+
+    const cur = new Date(startDate.getTime() + istOffsetMs);
     cur.setUTCHours(0, 0, 0, 0);
 
     while (cur <= endDate) {
@@ -268,6 +269,7 @@ app.get('/download-attendance', async (req, res) => {
       const dateKey = `${dayName}, ${dd}-${mm}-${yyyy}`;
 
       if (sheet.rowCount > 1) sheet.addRow([]);
+
       const dateRow = sheet.addRow([dateKey]);
       dateRow.font = dateHeaderStyle.font;
       dateRow.alignment = dateHeaderStyle.alignment;
@@ -282,7 +284,11 @@ app.get('/download-attendance', async (req, res) => {
 
       for (const name of sortedNames) {
         const { checkin, checkout } = employees[name];
-        sheet.addRow({ employeeName: name, checkin, checkout });
+        sheet.addRow({
+          employeeName: name,
+          checkin: checkin || 'Not given',
+          checkout: checkout || 'Not given',
+        });
       }
     }
 
@@ -291,6 +297,7 @@ app.get('/download-attendance', async (req, res) => {
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
@@ -298,6 +305,7 @@ app.get('/download-attendance', async (req, res) => {
     res.status(500).send('Error generating Excel');
   }
 });
+
 
 
 
