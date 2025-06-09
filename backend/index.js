@@ -8,7 +8,7 @@ const Attendance = require('./models/Attendance');
 const Employee = require('./models/Employee');
 
 const app = express();
-app.use(cors({ origin: 'http://localhost:5173' }));
+app.use(cors({ origin: 'https://attendance-system-jo9b.onrender.com' }));
 app.use(express.json({ limit: '1000mb' }));
 
 mongoose.connect(process.env.MONGODB_URI)

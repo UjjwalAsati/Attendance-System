@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
+const DEVICE_TOKEN = import.meta.env.VITE_DEVICE_AUTH_TOKEN;
+
 export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -8,48 +10,45 @@ export default function Login({ onLogin }) {
 
   useEffect(() => {
     const token = localStorage.getItem('authorizedDeviceToken');
-    setDeviceAuthorized(token === 'jatashankar-2025-token-01'); 
+    setDeviceAuthorized(token === DEVICE_TOKEN);
   }, []);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError(null);
+ const handleLogin = async (e) => {
+  e.preventDefault();
+  setError(null);
 
-    if (!deviceAuthorized) {
-      setError('Unauthorized device! Please authorize this device first.');
-      return;
+  if (!deviceAuthorized) {
+    setError('Unauthorized device! Please authorize this device first.');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      localStorage.setItem('username', email);
+      onLogin(email);
+    } else {
+      setError(data.message || 'Invalid credentials');
     }
+  } catch (err) {
+    setError('Server error, try again later');
+  }
+};
 
-    try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        localStorage.setItem('username', email);
-        onLogin(email);
-      } else {
-        setError(data.message || 'Invalid credentials');
-      }
-    } catch (err) {
-      setError('Server error, try again later');
-    }
-  };
 
   if (!deviceAuthorized) {
     return (
       <div style={{ maxWidth: 400, margin: 'auto', padding: 20 }}>
         <h2>Device Not Authorized</h2>
         <p style={{ color: 'red' }}>You must authorize this device before logging in.</p>
-        <p>Open browser console and paste:</p>
-        <pre style={{ background: '#eee', padding: '10px' }}>
-          localStorage.setItem('authorizedDeviceToken', 'jatashankar-2025-token-01')
-        </pre>
-        <p>Then refresh the page.</p>
+        <p>Go to the <strong>Authorize Device</strong> section after login to enter the secret token.</p>
       </div>
     );
   }
