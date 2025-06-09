@@ -79,17 +79,17 @@ export default function RegisterFace() {
     }
 
     const faceDescriptor = Array.from(detection.descriptor);
-    const username = localStorage.getItem('username'); // ← THIS LINE WAS WRONG: should be getItem()
+    const username = localStorage.getItem('username');
 
     if (!username) {
       return setStatus('⚠️ User not logged in. Username missing.');
     }
 
     try {
-      const res = await fetch('http://localhost:3001/register-face', {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/register-face`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, faceDescriptor, username }), // Use JSON.stringify
+        body: JSON.stringify({ name, faceDescriptor, username }),
       });
 
       const data = await res.json();

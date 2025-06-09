@@ -86,7 +86,7 @@ export default function Attendance({ onLogout }) {
 
       const data = { descriptor, timestamp, latitude, longitude, type };
 
-      const response = await fetch('http://localhost:3001/submit-attendance', {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/submit-attendance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),

@@ -5,13 +5,13 @@ export default function Data() {
 
   const handleDownloadOverview = () => {
     const username = localStorage.getItem('username');
-    const url = `http://localhost:3001/download-overview?username=${encodeURIComponent(username)}`;
+    const url = `${import.meta.env.VITE_BACKEND_URL}/download-overview?username=${encodeURIComponent(username)}`;
     window.open(url, '_blank');
   };
 
   const handleDownloadExcel = async () => {
     try {
-      const res = await fetch('http://localhost:3001/download-attendance');
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/download-attendance`);
       if (!res.ok) throw new Error('Network response was not ok');
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);

@@ -61,15 +61,17 @@ export default function App() {
     }
   }, [userEmail]);
 
-  const handleLogout = () => {
-    if (attendanceRef.current?.stopCamera) {
-      attendanceRef.current.stopCamera();
-    }
-    setUserEmail(null);
-    setView(null);
-    setDeviceAuthorized(false);
-    localStorage.removeItem('username');
-  };
+ const handleLogout = () => {
+  if (attendanceRef.current?.stopCamera) {
+    attendanceRef.current.stopCamera();
+  }
+  setUserEmail(null);
+  setView(null);
+  setDeviceAuthorized(false);
+  localStorage.removeItem('username');
+  window.location.reload(); 
+};
+
 
   if (!userEmail) {
     return (

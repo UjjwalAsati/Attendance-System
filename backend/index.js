@@ -67,8 +67,6 @@ app.post('/submit-attendance', async (req, res) => {
       return res.status(400).json({ error: 'Missing fields' });
     }
 
-    console.log('📍 Received location:', latitude, longitude);
-
     const employees = await Employee.find();
     let matchedEmployee = null;
 
@@ -82,17 +80,6 @@ app.post('/submit-attendance', async (req, res) => {
 
     if (!matchedEmployee) {
       return res.json({ success: false, message: 'Face not recognized' });
-    }
-
-    const centerLat = 25.0478592;
-    const centerLon = 79.4492928;
-    const distance = getDistanceInMeters(latitude, longitude, centerLat, centerLon);
-
-    if (distance > 10000000) {
-      return res.json({
-        success: false,
-        message: `❌ Outside 100m attendance zone (distance: ${Math.round(distance)}m)`
-      });
     }
 
     const submittedDate = new Date(timestamp);
@@ -150,6 +137,7 @@ app.post('/submit-attendance', async (req, res) => {
   }
 });
 
+
 const DEALER_EMAIL = process.env.DEALER_EMAIL;
 const DEALER_PASSWORD = process.env.DEALER_PASSWORD;
 
@@ -171,25 +159,34 @@ app.get('/download-attendance', async (req, res) => {
   try {
     const { username } = req.query;
     const query = username ? { username } : {};
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
 
-    const records = await Attendance.find(query).sort({ timestamp: 1 });
-    const allEmployees = await Employee.find(username ? { username } : {});
+    const firstOfMonth = new Date(year, month, 1);
+    const startDate = new Date(firstOfMonth);
+    startDate.setDate(0);
+    const day2 = new Date(startDate);
+    const day1 = new Date(startDate);
+    day1.setDate(day2.getDate() - 1);
+    day1.setHours(0, 0, 0, 0);
 
+    const endDate = new Date();
+    endDate.setHours(23, 59, 59, 999);
+
+    const records = await Attendance.find({
+      ...query,
+      timestamp: { $gte: day1, $lte: endDate }
+    }).sort({ timestamp: 1 });
+
+    const allEmployees = await Employee.find(query);
     if (records.length === 0) {
       return res.status(404).send('No attendance records found.');
     }
 
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth(); 
-
-    const startDate = new Date(records[0].timestamp);
-    const endDate = new Date(records[records.length - 1].timestamp);
-
     const istOffsetMs = 5.5 * 60 * 60 * 1000;
     const dateList = [];
-
-    const cur = new Date(startDate.getTime() + istOffsetMs);
+    const cur = new Date(day1.getTime() + istOffsetMs);
     cur.setUTCHours(0, 0, 0, 0);
 
     while (cur <= endDate) {
@@ -215,7 +212,6 @@ app.get('/download-attendance', async (req, res) => {
     for (const record of records) {
       const istDate = new Date(record.timestamp.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
       const dateStr = istDate.toISOString().split('T')[0];
-
       const localTime = new Date(record.timestamp).toLocaleTimeString('en-IN', {
         timeZone: 'Asia/Kolkata',
         hour12: true,
@@ -272,7 +268,6 @@ app.get('/download-attendance', async (req, res) => {
       const dateKey = `${dayName}, ${dd}-${mm}-${yyyy}`;
 
       if (sheet.rowCount > 1) sheet.addRow([]);
-
       const dateRow = sheet.addRow([dateKey]);
       dateRow.font = dateHeaderStyle.font;
       dateRow.alignment = dateHeaderStyle.alignment;
@@ -287,20 +282,15 @@ app.get('/download-attendance', async (req, res) => {
 
       for (const name of sortedNames) {
         const { checkin, checkout } = employees[name];
-        sheet.addRow({
-          employeeName: name,
-          checkin: checkin || 'Not given',
-          checkout: checkout || 'Not given',
-        });
+        sheet.addRow({ employeeName: name, checkin, checkout });
       }
     }
 
     const monthName = now.toLocaleString('en-IN', { month: 'long' });
-    const filename = `attendance_${username || 'all'}_${monthName}_${year}_fullrange.xlsx`;
+    const filename = `attendance_${username || 'all'}_${monthName}_${year}_plus2days.xlsx`;
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
@@ -308,6 +298,8 @@ app.get('/download-attendance', async (req, res) => {
     res.status(500).send('Error generating Excel');
   }
 });
+
+
 
 
 app.get('/download-overview', async (req, res) => {
