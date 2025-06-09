@@ -9,7 +9,7 @@ const Employee = require('./models/Employee');
 
 const app = express();
 app.use(cors({ origin: 'http://localhost:5173' }));
-app.use(express.json({ limit: '5mb' }));
+app.use(express.json({ limit: '1000mb' }));
 
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB connected'))
@@ -179,10 +179,9 @@ app.get('/download-attendance', async (req, res) => {
       return res.status(404).send('No attendance records found.');
     }
 
-    // Use current date to get month and year, like overview route
     const now = new Date();
     const year = now.getFullYear();
-    const month = now.getMonth(); // 0-based
+    const month = now.getMonth(); 
 
     const startDate = new Date(records[0].timestamp);
     const endDate = new Date(records[records.length - 1].timestamp);
