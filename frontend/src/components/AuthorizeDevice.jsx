@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const DEVICE_TOKEN = import.meta.env.VITE_DEVICE_AUTH_TOKEN;
 
 export default function AuthorizeDevice() {
   const [inputToken, setInputToken] = useState('');
   const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    console.log('DEVICE_TOKEN from Vercel env:', DEVICE_TOKEN);
+  }, []);
 
   const handleSetToken = () => {
     if (inputToken === DEVICE_TOKEN) {
