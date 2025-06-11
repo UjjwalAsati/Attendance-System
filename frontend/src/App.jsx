@@ -7,51 +7,21 @@ import './App.css';
 
 const DEVICE_TOKEN = import.meta.env.VITE_DEVICE_AUTH_TOKEN;
 
-function AuthorizeDevice({ onAuthorized }) {
-  const [inputToken, setInputToken] = useState('');
-  const [error, setError] = useState(null);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (inputToken === DEVICE_TOKEN) {
-      localStorage.setItem('authorizedDeviceToken', inputToken);
-      onAuthorized(true);
-      setError(null);
-    } else {
-      setError('❌ Invalid device token. Please try again.');
-    }
-  };
-
-  return (
-    <div style={{ maxWidth: 400, margin: 'auto', padding: 20, textAlign: 'center' }}>
-      <h3>Authorize This Device</h3>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="password"
-          placeholder="Enter device token"
-          value={inputToken}
-          onChange={(e) => setInputToken(e.target.value)}
-          style={{ width: '100%', padding: 8, marginBottom: 10 }}
-        />
-        <button type="submit" style={{ padding: '8px 16px' }}>
-          Authorize
-        </button>
-      </form>
-      {error && <p style={{ color: 'red', marginTop: 10 }}>{error}</p>}
-    </div>
-  );
-}
-
 export default function App() {
   const [userEmail, setUserEmail] = useState(() => localStorage.getItem('username') || null);
   const [view, setView] = useState(null);
-  const [deviceAuthorized, setDeviceAuthorized] = useState(false);
+  const [deviceAuthorized, setDeviceAuthorized] = useState(() => {
+    const savedToken = localStorage.getItem('authorizedDeviceToken');
+    return savedToken === DEVICE_TOKEN;
+  });
+  const [inputToken, setInputToken] = useState('');
+  const [tokenError, setTokenError] = useState('');
   const attendanceRef = useRef(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('authorizedDeviceToken');
-    setDeviceAuthorized(token === DEVICE_TOKEN);
-  }, [userEmail]);
+    const savedToken = localStorage.getItem('authorizedDeviceToken');
+    setDeviceAuthorized(savedToken === DEVICE_TOKEN);
+  }, []);
 
   useEffect(() => {
     if (userEmail) {
@@ -61,17 +31,55 @@ export default function App() {
     }
   }, [userEmail]);
 
- const handleLogout = () => {
-  if (attendanceRef.current?.stopCamera) {
-    attendanceRef.current.stopCamera();
-  }
-  setUserEmail(null);
-  setView(null);
-  setDeviceAuthorized(false);
-  localStorage.removeItem('username');
-  window.location.reload(); 
-};
+  const handleLogout = () => {
+    if (attendanceRef.current?.stopCamera) {
+      attendanceRef.current.stopCamera();
+    }
+    setUserEmail(null);
+    setView(null);
+    setDeviceAuthorized(false);
+    localStorage.removeItem('username');
+    window.location.reload();
+  };
 
+  const handleTokenSubmit = (e) => {
+    e.preventDefault();
+    if (inputToken === DEVICE_TOKEN) {
+      localStorage.setItem('authorizedDeviceToken', DEVICE_TOKEN);
+      setDeviceAuthorized(true);
+      setTokenError('');
+    } else {
+      setTokenError('❌ Invalid token. Please try again.');
+    }
+  };
+
+  if (!deviceAuthorized && !userEmail) {
+    return (
+      <div style={{ maxWidth: 400, margin: 'auto', padding: 20, textAlign: 'center' }}>
+        <h3>Device Not Authorized</h3>
+        <p>You must authorize this device before logging in.</p>
+        <p>Enter the secret token below to authorize this browser:</p>
+
+        <form onSubmit={handleTokenSubmit}>
+          <input
+            type="password"
+            placeholder="Enter device token"
+            value={inputToken}
+            onChange={(e) => setInputToken(e.target.value)}
+            style={{ width: '100%', padding: 8, marginBottom: 10 }}
+          />
+          <button type="submit" style={{ padding: '8px 16px' }}>
+            Authorize Device
+          </button>
+        </form>
+
+        {tokenError && <p style={{ color: 'red', marginTop: 10 }}>{tokenError}</p>}
+        <p style={{ fontSize: 12, color: '#666', marginTop: 10 }}>
+          * This will be remembered in this browser.
+        </p>
+      </div>
+    );
+  }
 
   if (!userEmail) {
     return (
@@ -83,9 +91,22 @@ export default function App() {
 
   if (!deviceAuthorized) {
     return (
-      <div style={{ maxWidth: 600, margin: 'auto', padding: 20 }}>
+      <div style={{ maxWidth: 600, margin: 'auto', padding: 20, textAlign: 'center' }}>
         <h2>Welcome, {userEmail}</h2>
-        <AuthorizeDevice onAuthorized={setDeviceAuthorized} />
+        <h3>Authorize This Device</h3>
+        <form onSubmit={handleTokenSubmit}>
+          <input
+            type="password"
+            placeholder="Enter device token"
+            value={inputToken}
+            onChange={(e) => setInputToken(e.target.value)}
+            style={{ width: '100%', padding: 8, marginBottom: 10 }}
+          />
+          <button type="submit" style={{ padding: '8px 16px' }}>
+            Authorize
+          </button>
+        </form>
+        {tokenError && <p style={{ color: 'red', marginTop: 10 }}>{tokenError}</p>}
         <button
           onClick={handleLogout}
           style={{ marginTop: 20, backgroundColor: '#f44336', color: 'white', padding: '8px 16px' }}
