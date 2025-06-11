@@ -11,10 +11,12 @@ const app = express();
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://attendance-system-jo9b.onrender.com'
+    'https://attendance-system-phi-gules.vercel.app', // ✅ Add Vercel frontend URL
+    'https://attendance-system-jo9b.onrender.com'      // Backend self-origin (optional)
   ],
   credentials: true
 }));
+
 
 app.use(express.json({ limit: '1000mb' }));
 
