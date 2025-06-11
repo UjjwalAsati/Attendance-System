@@ -11,8 +11,8 @@ const app = express();
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://attendance-system-phi-gules.vercel.app', // ✅ Add Vercel frontend URL
-    'https://attendance-system-jo9b.onrender.com'      // Backend self-origin (optional)
+    'https://attendance-system-phi-gules.vercel.app', 
+    'https://attendance-system-jo9b.onrender.com'     
   ],
   credentials: true
 }));
@@ -70,9 +70,9 @@ app.post('/register-face', async (req, res) => {
 
 app.post('/submit-attendance', async (req, res) => {
   try {
-    const { descriptor, timestamp, latitude, longitude, type } = req.body;
+    const { descriptor, timestamp, type } = req.body;
 
-    if (!descriptor || !timestamp || latitude == null || longitude == null || !type) {
+    if (!descriptor || !timestamp || !type) {
       return res.status(400).json({ error: 'Missing fields' });
     }
 
@@ -126,8 +126,6 @@ app.post('/submit-attendance', async (req, res) => {
       employeeName: matchedEmployee.name,
       username: matchedEmployee.username,
       timestamp: submittedDate,
-      latitude,
-      longitude,
       type
     });
 

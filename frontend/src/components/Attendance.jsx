@@ -55,66 +55,53 @@ export default function Attendance({ onLogout }) {
     };
   }, [loadingModels]);
 
-  const handleAttendance = async (type) => {
-    setMessage('');
-    setSending(true);
+const handleAttendance = async (type) => {
+  setMessage('');
+  setSending(true);
 
-    try {
-      const detection = await faceapi
-        .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
-        .withFaceLandmarks()
-        .withFaceDescriptor();
+  try {
+    const detection = await faceapi
+      .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
+      .withFaceLandmarks()
+      .withFaceDescriptor();
 
-      if (!detection) {
-        setMessage('❌ No face detected, please try again.');
-        setSending(false);
-        return;
-      }
-
-      const descriptor = Array.from(detection.descriptor);
-
-      const position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0,
-        });
-      });
-
-      const { latitude, longitude } = position.coords;
-      const timestamp = new Date().toISOString();
-
-      const data = { descriptor, timestamp, latitude, longitude, type };
-
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/submit-attendance`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      const json = await response.json();
-
-      if (json.success) {
-        const recordedTime = new Date(json.timestamp || new Date().toISOString());
-        const istTimeStr = recordedTime.toLocaleString('en-IN', {
-          timeZone: 'Asia/Kolkata',
-          hour12: true,
-        });
-        setMessage(`✅ ${type === 'checkin' ? 'Check-in' : 'Checkout'} recorded for ${json.name} at ${istTimeStr}`);
-      } else {
-        setMessage(`ℹ️ ${json.message || 'Attendance not recorded.'}`);
-      }
-    } catch (err) {
-      console.error(`❌ Error during ${type}:`, err);
-      if (err.code === 1) {
-        setMessage('❌ Location permission denied.');
-      } else {
-        setMessage('❌ Error: ' + err.message);
-      }
+    if (!detection) {
+      setMessage('❌ No face detected, please try again.');
+      setSending(false);
+      return;
     }
 
-    setSending(false);
-  };
+    const descriptor = Array.from(detection.descriptor);
+    const timestamp = new Date().toISOString();
+
+    const data = { descriptor, timestamp, type };
+
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/submit-attendance`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    const json = await response.json();
+
+    if (json.success) {
+      const recordedTime = new Date(json.timestamp || new Date().toISOString());
+      const istTimeStr = recordedTime.toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        hour12: true,
+      });
+      setMessage(`✅ ${type === 'checkin' ? 'Check-in' : 'Checkout'} recorded for ${json.name} at ${istTimeStr}`);
+    } else {
+      setMessage(`ℹ️ ${json.message || 'Attendance not recorded.'}`);
+    }
+  } catch (err) {
+    console.error(`❌ Error during ${type}:`, err);
+    setMessage('❌ Error: ' + err.message);
+  }
+
+  setSending(false);
+};
+
 
   return (
     <div className="attendance-container" style={{ textAlign: 'center', marginTop: '20px' }}>

@@ -45,8 +45,6 @@ router.post('/submit-attendance', async (req, res) => {
       name: bestMatch.name,
       email: bestMatch.email,
       timestamp: new Date(),
-      latitude,
-      longitude,
       faceImageBase64,
     });
 
