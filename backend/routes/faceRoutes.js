@@ -6,7 +6,7 @@ const Attendance = require('../models/Attendance');
 router.post('/submit-attendance', async (req, res) => {
   const faceapi = require('@vladmandic/face-api');
   const canvas = require('canvas');
-  const { faceImageBase64, latitude, longitude } = req.body;
+  const { faceImageBase64} = req.body;
 
   try {
     const imgBuffer = Buffer.from(faceImageBase64.split(',')[1], 'base64');

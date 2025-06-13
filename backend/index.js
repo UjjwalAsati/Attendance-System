@@ -173,7 +173,7 @@ app.get('/download-attendance', async (req, res) => {
     const firstOfMonth = new Date(year, month, 1);
     const lastMonth = new Date(firstOfMonth);
     lastMonth.setDate(0);
-    const day2 = new Date(lastMonth);
+    
     const day1 = new Date(lastMonth);
     day1.setDate(lastMonth.getDate() - 1);
 
