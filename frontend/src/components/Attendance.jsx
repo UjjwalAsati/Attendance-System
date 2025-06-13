@@ -103,38 +103,39 @@ const handleAttendance = async (type) => {
 };
 
 
-  return (
-    <div className="attendance-container" style={{ textAlign: 'center', marginTop: '20px' }}>
-      <h2>Attendance Portal</h2>
-      {loadingModels ? (
-        <p>Loading face detection models...</p>
-      ) : (
-        <>
+return (
+  <div className="attendance-container" style={{ textAlign: 'center', marginTop: '20px', padding: '0 10px' }}>
+    <h2 style={{ marginBottom: '10px' }}>Attendance Portal</h2>
+    {loadingModels ? (
+      <p>Loading face detection models...</p>
+    ) : (
+      <>
+        <div style={{ maxWidth: '100%', margin: '0 auto' }}>
           <video
             ref={videoRef}
-            width="400"
-            height="300"
             autoPlay
             muted
-            style={{ border: '1px solid #ccc' }}
+            style={{ width: '100%', maxWidth: '400px', height: 'auto', border: '1px solid #ccc', borderRadius: '8px' }}
           />
-          <div style={{
-            marginTop: '15px',
-            display: 'flex',
-            justifyContent: 'center',
-            flexWrap: 'wrap',
-            gap: '10px'
-          }}>
-            <button onClick={() => handleAttendance('checkin')} disabled={sending}>
-              {sending ? 'Processing...' : 'Check In'}
-            </button>
-            <button onClick={() => handleAttendance('checkout')} disabled={sending}>
-              {sending ? 'Processing...' : 'Check Out'}
-            </button>
-          </div>
-          {message && <p style={{ marginTop: '10px' }}>{message}</p>}
-        </>
-      )}
-    </div>
-  );
+        </div>
+        <div style={{
+          marginTop: '15px',
+          display: 'flex',
+          justifyContent: 'center',
+          flexWrap: 'wrap',
+          gap: '10px'
+        }}>
+          <button onClick={() => handleAttendance('checkin')} disabled={sending}>
+            {sending ? 'Processing...' : 'Check In'}
+          </button>
+          <button onClick={() => handleAttendance('checkout')} disabled={sending}>
+            {sending ? 'Processing...' : 'Check Out'}
+          </button>
+        </div>
+        {message && <p style={{ marginTop: '10px' }}>{message}</p>}
+      </>
+    )}
+  </div>
+);
+
 }

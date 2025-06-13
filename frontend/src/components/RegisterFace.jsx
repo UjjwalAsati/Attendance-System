@@ -32,8 +32,6 @@ export default function RegisterFace() {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter(device => device.kind === 'videoinput');
 
-      console.log('Available cameras:', videoDevices);
-
       const hpCamera = videoDevices.find(device =>
         device.label.includes('HP TrueVision HD Camera')
       );
@@ -105,30 +103,35 @@ export default function RegisterFace() {
     }
   };
 
-  return (
-    <div style={{ padding: 20 }}>
-      <h2>Register New Employee</h2>
+return (
+  <div className="register-container" style={{ textAlign: 'center', marginTop: '20px', padding: '0 10px' }}>
+    <h2 style={{ marginBottom: '10px' }}>Register New Employee</h2>
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       <video
         ref={videoRef}
         autoPlay
         muted
-        width="320"
-        height="240"
-        style={{ border: '1px solid black', marginBottom: 10 }}
+        style={{ width: '100%', maxWidth: '400px', height: 'auto', border: '1px solid #ccc', borderRadius: '8px' }}
       />
-      <br />
+    </div>
+    <div style={{ marginTop: 15 }}>
       <input
         type="text"
         placeholder="Employee Name"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        style={{ marginBottom: 10, padding: 8, width: '100%' }}
+        style={{ padding: 8, width: '100%', maxWidth: '400px' }}
       />
       <br />
-      <button onClick={handleRegister} style={{ padding: 10, width: '100%' }}>
+      <button
+        onClick={handleRegister}
+        style={{ marginTop: 10, padding: '8px 16px', maxWidth: '400px', width: '100%' }}
+      >
         Register Face
       </button>
-      <p>{status}</p>
+      <p style={{ marginTop: 10 }}>{status}</p>
     </div>
-  );
+  </div>
+);
+
 }

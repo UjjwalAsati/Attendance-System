@@ -7,42 +7,46 @@ export default function Login({ onLogin }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [deviceAuthorized, setDeviceAuthorized] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('authorizedDeviceToken');
     setDeviceAuthorized(token === DEVICE_TOKEN);
   }, []);
 
- const handleLogin = async (e) => {
-  e.preventDefault();
-  setError(null);
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
 
-  if (!deviceAuthorized) {
-    setError('Unauthorized device! Please authorize this device first.');
-    return;
-  }
-
-  try {
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-      credentials: 'include'
-    });
-
-    const data = await res.json();
-
-    if (data.success) {
-      localStorage.setItem('username', email);
-      onLogin(email);
-    } else {
-      setError(data.message || 'Invalid credentials');
+    if (!deviceAuthorized) {
+      setError('Unauthorized device! Please authorize this device first.');
+      setLoading(false);
+      return;
     }
-  } catch (err) {
-    setError('Server error, try again later');
-  }
-};
 
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include'
+      });
+
+      const data = await res.json();
+      setLoading(false);
+
+      if (data.success) {
+        localStorage.setItem('username', email);
+        onLogin(email);
+      } else {
+        setError(data.message || 'Invalid credentials');
+      }
+    } catch (err) {
+      setLoading(false);
+      setError('Server error, try again later');
+    }
+  };
 
   if (!deviceAuthorized) {
     return (
@@ -73,8 +77,8 @@ export default function Login({ onLogin }) {
         onChange={e => setPassword(e.target.value)}
         style={{ width: '100%', marginBottom: 10, padding: 8 }}
       />
-      <button type="submit" style={{ width: '100%', padding: 10 }}>
-        Login
+      <button type="submit" style={{ width: '100%', padding: 10 }} disabled={loading}>
+        {loading ? 'Logging in...' : 'Login'}
       </button>
       {error && <p style={{ color: 'red' }}>{error}</p>}
     </form>

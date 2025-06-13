@@ -118,23 +118,55 @@ export default function App() {
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: 'auto', padding: 20 }}>
-      <h2>Welcome, {userEmail}</h2>
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-          gap: '10px',
-          marginBottom: '20px',
-        }}
-      >
-        <button onClick={() => setView('attendance')}>Take Attendance</button>
-        <button onClick={() => setView('register')}>Register New Employee</button>
-        <button onClick={() => setView('data')}>Data</button>
-        <button onClick={handleLogout} style={{ backgroundColor: '#f44336', color: 'white' }}>
-          Logout
-        </button>
+    <div style={{ paddingTop: '120px', maxWidth: 800, margin: 'auto' }}>
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#f5f5f5',
+        borderBottom: '1px solid #ccc',
+        padding: '12px 20px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        zIndex: 1000,
+        flexWrap: 'wrap'
+      }}>
+        <div>
+          <select
+            value={view || ''}
+            onChange={(e) => setView(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 4,
+              border: '1px solid #ccc',
+              fontSize: 14
+            }}
+          >
+            <option value="">📂 Select Action</option>
+            <option value="attendance">📝 Take Attendance</option>
+            <option value="register">➕ Register Employee</option>
+            <option value="data">📊 Data</option>
+          </select>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: 14, fontWeight: 'bold' }}>Welcome, {userEmail}</span>
+          <button
+            onClick={handleLogout}
+            style={{
+              backgroundColor: '#f44336',
+              color: 'white',
+              padding: '6px 12px',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer'
+            }}
+          >
+            Logout
+          </button>
+        </div>
       </div>
 
       {view === 'attendance' && <Attendance ref={attendanceRef} />}
