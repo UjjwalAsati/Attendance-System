@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { loadFaceModels } from '../utils/loadFaceModels'; 
 
 const DEVICE_TOKEN = import.meta.env.VITE_DEVICE_AUTH_TOKEN;
 
@@ -38,6 +39,8 @@ export default function Login({ onLogin }) {
 
       if (data.success) {
         localStorage.setItem('username', email);
+
+        await loadFaceModels(); 
         onLogin(email);
       } else {
         setError(data.message || 'Invalid credentials');

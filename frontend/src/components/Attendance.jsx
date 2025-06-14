@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as faceapi from 'face-api.js';
-
+import { loadFaceModels } from '../utils/loadFaceModels'; 
 export default function Attendance({ onLogout }) {
   const videoRef = useRef(null);
-  const [loadingModels, setLoadingModels] = useState(true);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [mode, setMode] = useState(null);
@@ -12,18 +11,8 @@ export default function Attendance({ onLogout }) {
   const successAudioRef = useRef(new Audio('/success.mp3'));
 
   useEffect(() => {
-    const loadModels = async () => {
-      const MODEL_URL = '/models';
-      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-      await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-      setLoadingModels(false);
-    };
-    loadModels();
-  }, []);
-
-  useEffect(() => {
-    const startCamera = async () => {
+    const startUp = async () => {
+      await loadFaceModels(); 
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(d => d.kind === 'videoinput');
@@ -47,16 +36,14 @@ export default function Attendance({ onLogout }) {
       }
     };
 
-    if (!loadingModels) {
-      startCamera();
-    }
+    startUp();
 
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
     };
-  }, [loadingModels]);
+  }, []);
 
   const triggerFlash = (color) => {
     setFlashColor(color);
@@ -64,11 +51,12 @@ export default function Attendance({ onLogout }) {
   };
 
   const handleAttendance = async (type) => {
+    if (!videoRef.current) return;
     setSending(true);
     setMessage('');
     try {
       const detection = await faceapi
-        .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
+        .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
         .withFaceLandmarks()
         .withFaceDescriptor();
 
@@ -80,7 +68,6 @@ export default function Attendance({ onLogout }) {
 
       const descriptor = Array.from(detection.descriptor);
       const timestamp = new Date().toISOString();
-
       const data = { descriptor, timestamp, type };
 
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/submit-attendance`, {
@@ -102,7 +89,6 @@ export default function Attendance({ onLogout }) {
         successAudioRef.current.play();
 
         if (navigator.vibrate) navigator.vibrate(300);
-
         triggerFlash(type === 'checkin' ? 'green' : 'blue');
       } else {
         setMessage(`ℹ️ ${json.message || 'Attendance not recorded.'}`);
@@ -116,13 +102,13 @@ export default function Attendance({ onLogout }) {
 
   useEffect(() => {
     let interval;
-    if (mode && !loadingModels && !sending) {
+    if (mode && !sending) {
       interval = setInterval(() => {
         if (!sending) handleAttendance(mode);
-      }, 5000);
+      }, 2000);
     }
     return () => clearInterval(interval);
-  }, [mode, loadingModels, sending]);
+  }, [mode, sending]);
 
   return (
     <div
@@ -136,48 +122,44 @@ export default function Attendance({ onLogout }) {
       }}
     >
       <h2>Attendance Portal</h2>
-      {loadingModels ? (
-        <p>Loading face detection models...</p>
-      ) : (
-        <>
-          <video
-            ref={videoRef}
-            width="400"
-            height="300"
-            autoPlay
-            muted
-            style={{ border: '1px solid #ccc' }}
-          />
-          <div style={{
-            marginTop: '15px',
-            display: 'flex',
-            justifyContent: 'center',
-            flexWrap: 'wrap',
-            gap: '10px'
-          }}>
-            <button
-              onClick={() => setMode('checkin')}
-              style={{ backgroundColor: mode === 'checkin' ? '#aaffaa' : '' }}
-            >
-              Auto Check-in
-            </button>
-            <button
-              onClick={() => setMode('checkout')}
-              style={{ backgroundColor: mode === 'checkout' ? '#aaffaa' : '' }}
-            >
-              Auto Check-out
-            </button>
-            <button
-              onClick={() => setMode(null)}
-              style={{ backgroundColor: mode === null ? '#ffaaaa' : '' }}
-            >
-              Stop
-            </button>
-          </div>
-          {mode && <p style={{ marginTop: '10px' }}>🔄 Current mode: <strong>{mode}</strong></p>}
-          {message && <p style={{ marginTop: '10px' }}>{message}</p>}
-        </>
-      )}
+      <>
+        <video
+          ref={videoRef}
+          width="400"
+          height="300"
+          autoPlay
+          muted
+          style={{ border: '1px solid #ccc' }}
+        />
+        <div style={{
+          marginTop: '15px',
+          display: 'flex',
+          justifyContent: 'center',
+          flexWrap: 'wrap',
+          gap: '10px'
+        }}>
+          <button
+            onClick={() => setMode('checkin')}
+            style={{ backgroundColor: mode === 'checkin' ? '#aaffaa' : '' }}
+          >
+            Auto Check-in
+          </button>
+          <button
+            onClick={() => setMode('checkout')}
+            style={{ backgroundColor: mode === 'checkout' ? '#aaffaa' : '' }}
+          >
+            Auto Check-out
+          </button>
+          <button
+            onClick={() => setMode(null)}
+            style={{ backgroundColor: mode === null ? '#ffaaaa' : '' }}
+          >
+            Stop
+          </button>
+        </div>
+        {mode && <p style={{ marginTop: '10px' }}>🔄 Current mode: <strong>{mode}</strong></p>}
+        {message && <p style={{ marginTop: '10px' }}>{message}</p>}
+      </>
     </div>
   );
 }

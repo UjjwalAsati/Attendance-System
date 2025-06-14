@@ -1,22 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as faceapi from 'face-api.js';
+import { loadFaceModels } from '../utils/loadFaceModels'; 
 
 export default function RegisterFace() {
   const videoRef = useRef(null);
   const [name, setName] = useState('');
   const [status, setStatus] = useState('');
-  const [modelsLoaded, setModelsLoaded] = useState(false);
 
   useEffect(() => {
     const loadModelsAndStartCamera = async () => {
       try {
-        const MODEL_URL = '/models';
-        await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-          faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-        ]);
-        setModelsLoaded(true);
+        await loadFaceModels();
         startCamera();
       } catch (err) {
         console.error('Model load error:', err);
@@ -62,9 +56,6 @@ export default function RegisterFace() {
 
   const handleRegister = async () => {
     setStatus('');
-    if (!modelsLoaded) {
-      return setStatus('⚠️ Face models not loaded yet.');
-    }
     if (!name.trim()) {
       return setStatus('⚠️ Please enter a valid name.');
     }
