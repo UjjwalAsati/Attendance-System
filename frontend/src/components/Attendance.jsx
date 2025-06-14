@@ -6,7 +6,10 @@ export default function Attendance({ onLogout }) {
   const [loadingModels, setLoadingModels] = useState(true);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [mode, setMode] = useState(null);
+  const [flashColor, setFlashColor] = useState(null);
   const streamRef = useRef(null);
+  const successAudioRef = useRef(new Audio('/success.mp3'));
 
   useEffect(() => {
     const loadModels = async () => {
@@ -55,87 +58,126 @@ export default function Attendance({ onLogout }) {
     };
   }, [loadingModels]);
 
-const handleAttendance = async (type) => {
-  setMessage('');
-  setSending(true);
+  const triggerFlash = (color) => {
+    setFlashColor(color);
+    setTimeout(() => setFlashColor(null), 1000);
+  };
 
-  try {
-    const detection = await faceapi
-      .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
-      .withFaceLandmarks()
-      .withFaceDescriptor();
+  const handleAttendance = async (type) => {
+    setSending(true);
+    setMessage('');
+    try {
+      const detection = await faceapi
+        .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks()
+        .withFaceDescriptor();
 
-    if (!detection) {
-      setMessage('❌ No face detected, please try again.');
-      setSending(false);
-      return;
-    }
+      if (!detection) {
+        setMessage('❌ No face detected, please try again.');
+        setSending(false);
+        return;
+      }
 
-    const descriptor = Array.from(detection.descriptor);
-    const timestamp = new Date().toISOString();
+      const descriptor = Array.from(detection.descriptor);
+      const timestamp = new Date().toISOString();
 
-    const data = { descriptor, timestamp, type };
+      const data = { descriptor, timestamp, type };
 
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/submit-attendance`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-
-    const json = await response.json();
-
-    if (json.success) {
-      const recordedTime = new Date(json.timestamp || new Date().toISOString());
-      const istTimeStr = recordedTime.toLocaleString('en-IN', {
-        timeZone: 'Asia/Kolkata',
-        hour12: true,
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/submit-attendance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
       });
-      setMessage(`✅ ${type === 'checkin' ? 'Check-in' : 'Checkout'} recorded for ${json.name} at ${istTimeStr}`);
-    } else {
-      setMessage(`ℹ️ ${json.message || 'Attendance not recorded.'}`);
+
+      const json = await response.json();
+
+      if (json.success) {
+        const recordedTime = new Date(json.timestamp || new Date().toISOString());
+        const istTimeStr = recordedTime.toLocaleString('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          hour12: true,
+        });
+
+        setMessage(`✅ ${type === 'checkin' ? 'Check-in' : 'Checkout'} recorded for ${json.name} at ${istTimeStr}`);
+        successAudioRef.current.play();
+
+        if (navigator.vibrate) navigator.vibrate(300);
+
+        triggerFlash(type === 'checkin' ? 'green' : 'blue');
+      } else {
+        setMessage(`ℹ️ ${json.message || 'Attendance not recorded.'}`);
+      }
+    } catch (err) {
+      console.error(`❌ Error during ${type}:`, err);
+      setMessage('❌ Error: ' + err.message);
     }
-  } catch (err) {
-    console.error(`❌ Error during ${type}:`, err);
-    setMessage('❌ Error: ' + err.message);
-  }
+    setSending(false);
+  };
 
-  setSending(false);
-};
+  useEffect(() => {
+    let interval;
+    if (mode && !loadingModels && !sending) {
+      interval = setInterval(() => {
+        if (!sending) handleAttendance(mode);
+      }, 5000);
+    }
+    return () => clearInterval(interval);
+  }, [mode, loadingModels, sending]);
 
-
-return (
-  <div className="attendance-container" style={{ textAlign: 'center', marginTop: '20px', padding: '0 10px' }}>
-    <h2 style={{ marginBottom: '10px' }}>Attendance Portal</h2>
-    {loadingModels ? (
-      <p>Loading face detection models...</p>
-    ) : (
-      <>
-        <div style={{ maxWidth: '100%', margin: '0 auto' }}>
+  return (
+    <div
+      className="attendance-container"
+      style={{
+        textAlign: 'center',
+        marginTop: '20px',
+        transition: 'background-color 0.3s ease',
+        backgroundColor: flashColor || 'transparent',
+        padding: '20px'
+      }}
+    >
+      <h2>Attendance Portal</h2>
+      {loadingModels ? (
+        <p>Loading face detection models...</p>
+      ) : (
+        <>
           <video
             ref={videoRef}
+            width="400"
+            height="300"
             autoPlay
             muted
-            style={{ width: '100%', maxWidth: '400px', height: 'auto', border: '1px solid #ccc', borderRadius: '8px' }}
+            style={{ border: '1px solid #ccc' }}
           />
-        </div>
-        <div style={{
-          marginTop: '15px',
-          display: 'flex',
-          justifyContent: 'center',
-          flexWrap: 'wrap',
-          gap: '10px'
-        }}>
-          <button onClick={() => handleAttendance('checkin')} disabled={sending}>
-            {sending ? 'Processing...' : 'Check In'}
-          </button>
-          <button onClick={() => handleAttendance('checkout')} disabled={sending}>
-            {sending ? 'Processing...' : 'Check Out'}
-          </button>
-        </div>
-        {message && <p style={{ marginTop: '10px' }}>{message}</p>}
-      </>
-    )}
-  </div>
-);
-
+          <div style={{
+            marginTop: '15px',
+            display: 'flex',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+            gap: '10px'
+          }}>
+            <button
+              onClick={() => setMode('checkin')}
+              style={{ backgroundColor: mode === 'checkin' ? '#aaffaa' : '' }}
+            >
+              Auto Check-in
+            </button>
+            <button
+              onClick={() => setMode('checkout')}
+              style={{ backgroundColor: mode === 'checkout' ? '#aaffaa' : '' }}
+            >
+              Auto Check-out
+            </button>
+            <button
+              onClick={() => setMode(null)}
+              style={{ backgroundColor: mode === null ? '#ffaaaa' : '' }}
+            >
+              Stop
+            </button>
+          </div>
+          {mode && <p style={{ marginTop: '10px' }}>🔄 Current mode: <strong>{mode}</strong></p>}
+          {message && <p style={{ marginTop: '10px' }}>{message}</p>}
+        </>
+      )}
+    </div>
+  );
 }
