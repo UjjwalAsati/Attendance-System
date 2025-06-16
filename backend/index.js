@@ -433,4 +433,8 @@ app.get('/download-overview', async (req, res) => {
 
 
 const port = process.env.PORT || 3001;
+app.get('/', (req, res) => {
+  res.send('Attendance backend is running.');
+});
+
 app.listen(port, () => console.log(`🚀 Backend running on port ${port}`));
