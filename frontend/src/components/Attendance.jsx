@@ -1,12 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as faceapi from 'face-api.js';
 import { loadFaceModels } from '../utils/loadFaceModels'; 
+
 export default function Attendance({ onLogout }) {
   const videoRef = useRef(null);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [mode, setMode] = useState(null);
   const [flashColor, setFlashColor] = useState(null);
+  const [facingMode, setFacingMode] = useState('user');
   const streamRef = useRef(null);
   const successAudioRef = useRef(new Audio('/success.mp3'));
 
@@ -14,15 +16,8 @@ export default function Attendance({ onLogout }) {
     const startUp = async () => {
       await loadFaceModels(); 
       try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter(d => d.kind === 'videoinput');
-        const laptopCamera = videoDevices.find(device =>
-          device.label.includes('HP TrueVision HD Camera')
-        );
-        const preferredDeviceId = laptopCamera?.deviceId || videoDevices[0]?.deviceId;
-
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { deviceId: preferredDeviceId ? { exact: preferredDeviceId } : undefined },
+          video: { facingMode }
         });
 
         streamRef.current = stream;
@@ -43,7 +38,7 @@ export default function Attendance({ onLogout }) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
     };
-  }, []);
+  }, [facingMode]);
 
   const triggerFlash = (color) => {
     setFlashColor(color);
@@ -135,8 +130,8 @@ export default function Attendance({ onLogout }) {
           marginTop: '15px',
           display: 'flex',
           justifyContent: 'center',
-          flexWrap: 'wrap',
-          gap: '10px'
+          gap: '10px',
+          flexWrap: 'wrap'
         }}>
           <button
             onClick={() => setMode('checkin')}
@@ -150,6 +145,18 @@ export default function Attendance({ onLogout }) {
           >
             Auto Check-out
           </button>
+        </div>
+
+        <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+          <button
+            onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')}
+            style={{ backgroundColor: '#00cc66', color: '#fff' }}
+          >
+            Switch Camera
+          </button>
+        </div>
+
+        <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
           <button
             onClick={() => setMode(null)}
             style={{ backgroundColor: mode === null ? '#ffaaaa' : '' }}
@@ -157,6 +164,7 @@ export default function Attendance({ onLogout }) {
             Stop
           </button>
         </div>
+
         {mode && <p style={{ marginTop: '10px' }}>🔄 Current mode: <strong>{mode}</strong></p>}
         {message && <p style={{ marginTop: '10px' }}>{message}</p>}
       </>
