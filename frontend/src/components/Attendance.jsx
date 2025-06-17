@@ -9,6 +9,7 @@ export default function Attendance({ onLogout }) {
   const [mode, setMode] = useState(null);
   const [flashColor, setFlashColor] = useState(null);
   const [facingMode, setFacingMode] = useState('user');
+  const [isTorchOn, setIsTorchOn] = useState(false);
   const streamRef = useRef(null);
   const successAudioRef = useRef(new Audio('/success.mp3'));
 
@@ -17,7 +18,11 @@ export default function Attendance({ onLogout }) {
       await loadFaceModels(); 
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode }
+          video: {
+            facingMode,
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
         });
 
         streamRef.current = stream;
@@ -35,10 +40,38 @@ export default function Attendance({ onLogout }) {
 
     return () => {
       if (streamRef.current) {
+        const videoTrack = streamRef.current.getVideoTracks()[0];
+        if (videoTrack?.getCapabilities()?.torch) {
+          videoTrack.applyConstraints({ advanced: [{ torch: false }] });
+        }
         streamRef.current.getTracks().forEach(track => track.stop());
       }
     };
   }, [facingMode]);
+
+  const toggleTorch = async () => {
+    const videoTrack = streamRef.current?.getVideoTracks?.()[0];
+    if (!videoTrack) {
+      setMessage('❌ No video track found.');
+      return;
+    }
+
+    const capabilities = videoTrack.getCapabilities?.();
+    if (!capabilities?.torch) {
+      setMessage('⚠️ Torch not supported on this camera.');
+      return;
+    }
+
+    try {
+      await videoTrack.applyConstraints({
+        advanced: [{ torch: !isTorchOn }]
+      });
+      setIsTorchOn(prev => !prev);
+    } catch (err) {
+      console.error('Torch error:', err);
+      setMessage('❌ Failed to toggle torch: ' + err.message);
+    }
+  };
 
   const triggerFlash = (color) => {
     setFlashColor(color);
@@ -100,7 +133,7 @@ export default function Attendance({ onLogout }) {
     if (mode && !sending) {
       interval = setInterval(() => {
         if (!sending) handleAttendance(mode);
-      }, 2000);
+      }, 400);
     }
     return () => clearInterval(interval);
   }, [mode, sending]);
@@ -147,12 +180,18 @@ export default function Attendance({ onLogout }) {
           </button>
         </div>
 
-        <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
           <button
             onClick={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')}
             style={{ backgroundColor: '#00cc66', color: '#fff' }}
           >
             Switch Camera
+          </button>
+          <button
+            onClick={toggleTorch}
+            style={{ backgroundColor: isTorchOn ? '#ffcc00' : '#cccccc' }}
+          >
+            {isTorchOn ? 'Turn Off Flash' : 'Turn On Flash'}
           </button>
         </div>
 
