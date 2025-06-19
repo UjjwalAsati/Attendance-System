@@ -78,65 +78,77 @@ export default function Attendance({ onLogout }) {
     setTimeout(() => setFlashColor(null), 1000);
   };
 
-  const handleAttendance = async (type) => {
-    if (!videoRef.current) return;
-    setSending(true);
-    setMessage('');
-    try {
-      const detection = await faceapi
-        .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
-        .withFaceLandmarks()
-        .withFaceDescriptor();
+const handleAttendance = async (type) => {
+  if (!videoRef.current || sending) return;
+  setSending(true);
+  setMessage('🔍 Detecting face...');
+  try {
+    const detection = await faceapi
+      .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.5 }))
+      .withFaceLandmarks()
+      .withFaceDescriptor();
 
-      if (!detection) {
-        setMessage('❌ No face detected, please try again.');
-        setSending(false);
-        return;
-      }
+    if (!detection) {
+      setMessage('❌ No face detected, please try again.');
+      return;
+    }
 
-      const descriptor = Array.from(detection.descriptor);
-      const timestamp = new Date().toISOString();
-      const data = { descriptor, timestamp, type };
+    const descriptor = Array.from(detection.descriptor);
+    const timestamp = new Date().toISOString();
+    const data = { descriptor, timestamp, type };
 
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/submit-attendance`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/submit-attendance`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    const json = await response.json();
+
+    if (json.success) {
+      const recordedTime = new Date(json.timestamp || new Date().toISOString());
+      const istTimeStr = recordedTime.toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        hour12: true,
       });
 
-      const json = await response.json();
-
-      if (json.success) {
-        const recordedTime = new Date(json.timestamp || new Date().toISOString());
-        const istTimeStr = recordedTime.toLocaleString('en-IN', {
-          timeZone: 'Asia/Kolkata',
-          hour12: true,
-        });
-
-        setMessage(`✅ ${type === 'checkin' ? 'Check-in' : 'Checkout'} recorded for ${json.name} at ${istTimeStr}`);
-        successAudioRef.current.play();
-
-        if (navigator.vibrate) navigator.vibrate(300);
-        triggerFlash(type === 'checkin' ? 'green' : 'blue');
-      } else {
-        setMessage(`ℹ️ ${json.message || 'Attendance not recorded.'}`);
-      }
-    } catch (err) {
+      setMessage(`✅ ${type === 'checkin' ? 'Check-in' : 'Checkout'} recorded for ${json.name} at ${istTimeStr}`);
+      successAudioRef.current.play();
+      if (navigator.vibrate) navigator.vibrate(300);
+      triggerFlash(type === 'checkin' ? 'green' : 'blue');
+    } else {
+      setMessage(`ℹ️ ${json.message || 'Attendance not recorded.'}`);
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      setMessage('❌ Request timed out. Server might be asleep.');
+    } else {
       console.error(`❌ Error during ${type}:`, err);
       setMessage('❌ Error: ' + err.message);
     }
+  } finally {
     setSending(false);
-  };
+  }
+};
 
-  useEffect(() => {
-    let interval;
-    if (mode && !sending) {
-      interval = setInterval(() => {
-        if (!sending) handleAttendance(mode);
-      }, 400);
-    }
-    return () => clearInterval(interval);
-  }, [mode, sending]);
+
+
+ useEffect(() => {
+  let interval;
+  if (mode) {
+    interval = setInterval(() => {
+      if (!sending) handleAttendance(mode);
+    }, 400);
+  }
+  return () => clearInterval(interval);
+}, [mode, sending]);
+
 
   return (
     <div

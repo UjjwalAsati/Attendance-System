@@ -41,17 +41,7 @@ function euclideanDistance(d1, d2) {
   return Math.sqrt(d1.reduce((sum, val, i) => sum + Math.pow(val - d2[i], 2), 0));
 }
 
-function getDistanceInMeters(lat1, lon1, lat2, lon2) {
-  const R = 6371e3;
-  const toRad = deg => deg * Math.PI / 180;
-  const φ1 = toRad(lat1);
-  const φ2 = toRad(lat2);
-  const Δφ = toRad(lat2 - lat1);
-  const Δλ = toRad(lon2 - lon1);
-  const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
+
 
 app.post('/register-face', async (req, res) => {
   try {
@@ -95,10 +85,11 @@ app.post('/submit-attendance', async (req, res) => {
     const { startUTC, endUTC } = getISTDayBounds(submittedDate);
 
     const existingSameType = await Attendance.findOne({
-      employeeName: matchedEmployee.name,
-      type,
-      timestamp: { $gte: startUTC, $lte: endUTC }
-    });
+  employeeName: matchedEmployee.name,
+  type,
+  timestamp: { $gte: startUTC, $lte: endUTC }
+}).sort({ timestamp: -1 });
+
 
     if (existingSameType) {
       return res.json({
