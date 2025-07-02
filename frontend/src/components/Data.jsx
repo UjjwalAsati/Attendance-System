@@ -11,13 +11,14 @@ export default function Data() {
 
   const handleDownloadExcel = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/download-attendance`);
+      const username = localStorage.getItem('username');
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/download-attendance?username=${encodeURIComponent(username)}`);
       if (!res.ok) throw new Error('Network response was not ok');
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'attendance.xlsx';
+      a.download = `attendance_${username}.xlsx`;
       document.body.appendChild(a);
       a.click();
       a.remove();

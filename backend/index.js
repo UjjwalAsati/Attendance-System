@@ -19,10 +19,21 @@ app.use(cors({
 
 
 app.use(express.json({ limit: '1000mb' }));
+let MONGODB_URI = '';
 
-mongoose.connect(process.env.MONGODB_URI)
+if (process.env.DEFAULT_USER === 'jatashankar_auto@rediffmail.com') {
+  MONGODB_URI = process.env.MONGODB_URI_JM;
+} else if (process.env.DEFAULT_USER === 'jatashankarsalesandservices@gmail.com') {
+  MONGODB_URI = process.env.MONGODB_URI_JSS;
+} else {
+  console.error('❌ No matching MONGODB_URI for DEFAULT_USER');
+  process.exit(1);
+}
+
+mongoose.connect(MONGODB_URI)
   .then(() => console.log('✅ MongoDB connected'))
   .catch(err => console.error('❌ MongoDB connection error:', err));
+
 
 function getISTDayBounds(date) {
   const istOffsetMs = 5.5 * 60 * 60 * 1000;
@@ -49,6 +60,8 @@ app.post('/register-face', async (req, res) => {
     if (!name || !faceDescriptor || faceDescriptor.length === 0 || !username) {
       return res.status(400).json({ error: 'Missing name, username or face descriptor' });
     }
+
+    const { Employee } = await getTenantModels(username);
     const employee = new Employee({ name, faceDescriptor, username });
     await employee.save();
     res.json({ success: true, message: 'Face registered successfully' });
@@ -58,13 +71,18 @@ app.post('/register-face', async (req, res) => {
   }
 });
 
+
+const { getTenantModels } = require('./models/getTenantModels');
+
 app.post('/submit-attendance', async (req, res) => {
   try {
-    const { descriptor, timestamp, type } = req.body;
+    const { descriptor, timestamp, type, username } = req.body;
 
-    if (!descriptor || !timestamp || !type) {
+    if (!descriptor || !timestamp || !type || !username) {
       return res.status(400).json({ error: 'Missing fields' });
     }
+
+    const { Employee, Attendance } = await getTenantModels(username); 
 
     const employees = await Employee.find();
     let matchedEmployee = null;
@@ -85,11 +103,10 @@ app.post('/submit-attendance', async (req, res) => {
     const { startUTC, endUTC } = getISTDayBounds(submittedDate);
 
     const existingSameType = await Attendance.findOne({
-  employeeName: matchedEmployee.name,
-  type,
-  timestamp: { $gte: startUTC, $lte: endUTC }
-}).sort({ timestamp: -1 });
-
+      employeeName: matchedEmployee.name,
+      type,
+      timestamp: { $gte: startUTC, $lte: endUTC }
+    }).sort({ timestamp: -1 });
 
     if (existingSameType) {
       return res.json({
@@ -136,27 +153,56 @@ app.post('/submit-attendance', async (req, res) => {
 });
 
 
-const DEALER_EMAIL = process.env.DEALER_EMAIL;
-const DEALER_PASSWORD = process.env.DEALER_PASSWORD;
 
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
-  if (email === DEALER_EMAIL && password === DEALER_PASSWORD) {
+
+  const validLogins = [
+    {
+      email: process.env.DEALER1_EMAIL,
+      password: process.env.DEALER1_PASSWORD
+    },
+    {
+      email: process.env.DEALER2_EMAIL,
+      password: process.env.DEALER2_PASSWORD
+    }
+  ];
+
+  const matched = validLogins.find(
+    user => user.email === email && user.password === password
+  );
+
+  if (matched) {
     return res.json({ success: true, message: 'Login successful' });
   } else {
     return res.status(401).json({ success: false, message: 'Invalid credentials' });
   }
 });
 
+
 app.get('/all-employees', async (req, res) => {
-  const employees = await Employee.find();
-  res.json(employees);
+  try {
+    const { username } = req.query;
+    const { Employee } = await getTenantModels(username);
+    const employees = await Employee.find();
+    res.json(employees);
+  } catch (error) {
+    console.error('❌ Error fetching employees:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
+
 
 app.get('/download-attendance', async (req, res) => {
   try {
     const { username } = req.query;
-    const query = username ? { username } : {};
+
+    if (!username) {
+      return res.status(400).send('Missing username');
+    }
+
+    const { Employee, Attendance } = await getTenantModels(username);
+
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth();
@@ -172,11 +218,10 @@ app.get('/download-attendance', async (req, res) => {
     const endDate = new Date(now.setHours(23, 59, 59, 999));
 
     const records = await Attendance.find({
-      ...query,
       timestamp: { $gte: startDate, $lte: endDate }
     }).sort({ timestamp: 1 });
 
-    const allEmployees = await Employee.find(query);
+    const allEmployees = await Employee.find();
 
     if (records.length === 0) {
       return res.status(404).send('No attendance records found.');
@@ -291,7 +336,7 @@ app.get('/download-attendance', async (req, res) => {
     }
 
     const monthName = now.toLocaleString('en-IN', { month: 'long' });
-    const filename = `attendance_${username || 'all'}_${monthName}_${year}_plus2days.xlsx`;
+    const filename = `attendance_${username}_${monthName}_${year}_plus2days.xlsx`;
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -303,6 +348,7 @@ app.get('/download-attendance', async (req, res) => {
     res.status(500).send('Error generating Excel');
   }
 });
+
 
 
 
@@ -320,12 +366,14 @@ app.get('/download-overview', async (req, res) => {
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
 
-    const allEmployees = await Employee.find(username ? { username } : {}).sort({ name: 1 });
+    const { Employee, Attendance } = await getTenantModels(username);
+
+    const allEmployees = await Employee.find().sort({ name: 1 });
 
     const attendanceRecords = await Attendance.find({
-      timestamp: { $gte: firstDay, $lte: lastDay },
-      ...(username && { username }),
+      timestamp: { $gte: firstDay, $lte: lastDay }
     });
+
 
     const grouped = {};
     for (const emp of allEmployees) {

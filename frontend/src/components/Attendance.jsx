@@ -80,14 +80,16 @@ export default function Attendance({ onLogout }) {
 
       const descriptor = Array.from(detection.descriptor);
       const timestamp = new Date().toISOString();
+const username = localStorage.getItem('username');  
 
-      const data = { descriptor, timestamp, type };
+const data = { descriptor, timestamp, type, username };
 
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/submit-attendance`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/submit-attendance`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(data),
+});
+
 
       const json = await response.json();
 
