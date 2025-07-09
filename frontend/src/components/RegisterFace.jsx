@@ -6,6 +6,8 @@ export default function RegisterFace() {
   const videoRef = useRef(null);
   const [name, setName] = useState('');
   const [status, setStatus] = useState('');
+  const [facingMode, setFacingMode] = useState('user');
+  const [stream, setStream] = useState(null);
 
   useEffect(() => {
     const loadModelsAndStartCamera = async () => {
@@ -19,31 +21,32 @@ export default function RegisterFace() {
     };
 
     loadModelsAndStartCamera();
-  }, []);
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [facingMode]);
 
   const startCamera = async () => {
     try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
 
-      console.log('Available cameras:', videoDevices);
-
-      const hpCamera = videoDevices.find(device =>
-        device.label.includes('HP TrueVision HD Camera')
-      );
-
-      const preferredDeviceId = hpCamera?.deviceId || videoDevices[0]?.deviceId;
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: preferredDeviceId ? { exact: preferredDeviceId } : undefined },
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode },
+        audio: false,
       });
 
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+        videoRef.current.srcObject = mediaStream;
         videoRef.current.onloadedmetadata = () => {
           videoRef.current.play();
         };
       }
+
+      setStream(mediaStream);
     } catch (err) {
       console.error('Camera error:', err);
       if (err.name === 'NotReadableError') {
@@ -52,6 +55,10 @@ export default function RegisterFace() {
         setStatus('❌ Failed to start camera.');
       }
     }
+  };
+
+  const handleSwitchCamera = () => {
+    setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'));
   };
 
   const handleRegister = async () => {
@@ -107,7 +114,6 @@ export default function RegisterFace() {
         height="240"
         style={{ border: '1px solid black', marginBottom: 10 }}
       />
-      <br />
       <input
         type="text"
         placeholder="Employee Name"
@@ -120,6 +126,11 @@ export default function RegisterFace() {
         Register Face
       </button>
       <p>{status}</p>
+      <br />
+      <button onClick={handleSwitchCamera} style={{ marginBottom: 10, padding: 8 }}>
+        Switch Camera
+      </button>
+      <br />
     </div>
   );
 }
