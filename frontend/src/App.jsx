@@ -3,6 +3,10 @@ import Login from './components/Login';
 import Attendance from './components/Attendance';
 import RegisterFace from './components/RegisterFace';
 import Data from './components/Data';
+import EditEmployee from './components/EditEmployee';
+
+
+
 import './App.css';
 
 const DEVICE_TOKEN = import.meta.env.VITE_DEVICE_AUTH_TOKEN;
@@ -148,7 +152,9 @@ export default function App() {
             <option value="attendance">📝 Take Attendance</option>
             <option value="register">➕ Register Employee</option>
             <option value="data">📊 Data</option>
+            <option value="edit">✏️ Edit/Delete Employee</option> {/* ✅ Add this */}
           </select>
+
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -172,6 +178,8 @@ export default function App() {
       {view === 'attendance' && <Attendance ref={attendanceRef} />}
       {view === 'register' && <RegisterFace />}
       {view === 'data' && <Data />}
+      {view === 'edit' && <EditEmployee />}
+
     </div>
   );
 }

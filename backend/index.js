@@ -468,6 +468,68 @@ app.get('/download-overview', async (req, res) => {
 });
 
 
+app.get('/get-employees', async (req, res) => {
+  try {
+    const { username } = req.query;
+    if (!username) return res.status(400).json({ success: false, message: 'Username is required' });
+    const { Employee } = await getTenantModels(username);
+    const employees = await Employee.find({});
+    res.json({ success: true, employees });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+app.post('/edit-employee/:id', async (req, res) => {
+  try {
+    const { username, newName } = req.body;
+    const { id } = req.params;
+
+    if (!username || !newName) {
+      return res.status(400).json({ success: false, message: 'Missing data' });
+    }
+
+    const { Employee } = await getTenantModels(username);
+
+    const employee = await Employee.findById(id);
+    if (!employee) {
+      return res.status(404).json({ success: false, message: 'Employee not found' });
+    }
+
+    employee.name = newName;
+    await employee.save();
+
+    res.json({
+      success: true,
+      message: '✅ Name updated successfully',
+      employee,
+    });
+  } catch (err) {
+    console.error('❌ Error updating employee:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+    });
+  }
+});
+
+
+
+app.delete('/delete-employee/:id', async (req, res) => {
+  try {
+    const { username } = req.query;
+    const { id } = req.params;
+    if (!username) return res.status(400).json({ success: false, message: 'Username required' });
+    const { Employee, Attendance } = await getTenantModels(username);
+    await Employee.findByIdAndDelete(id);
+    await Attendance.deleteMany({ employeeId: id });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+
 
 
 

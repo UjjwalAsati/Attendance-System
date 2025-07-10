@@ -63,7 +63,7 @@ export default function Login({ onLogin }) {
 
   return (
     <form onSubmit={handleLogin} style={{ maxWidth: 400, margin: 'auto', padding: 20 }}>
-      <h2>Dealer Login</h2>
+      <h2>Login</h2>
       <input
         type="email"
         placeholder="Email"
