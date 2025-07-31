@@ -65,10 +65,10 @@ export default function EditEmployee() {
       });
       setEditNames(names);
 
-      setMessage(`✅ Loaded ${processedEmployees.length} employees`);
+      setMessage(`Loaded ${processedEmployees.length} employees`);
     } catch (err) {
       console.error('Fetch Error:', err);
-      setMessage(`❌ Error: ${err.message}`);
+      setMessage(`Error: ${err.message}`);
       setEmployees([]);
     } finally {
       setIsLoading(false);
@@ -84,7 +84,7 @@ export default function EditEmployee() {
   const handleEdit = async (id) => {
     const newName = editNames[id]?.trim();
     if (!newName) {
-      setMessage('❌ Please enter a valid name');
+      setMessage('Please enter a valid name');
       return;
     }
 
@@ -96,7 +96,7 @@ export default function EditEmployee() {
       });
       const data = await res.json();
       console.log('Edit response:', data);
-      setMessage(data.message || (data.success ? '✅ Updated successfully' : '❌ Update failed'));
+      setMessage(data.message || (data.success ? 'Updated successfully' : 'Update failed'));
 
       if (data.success) {
         setEmployees(prev =>
@@ -107,7 +107,7 @@ export default function EditEmployee() {
       }
     } catch (err) {
       console.error('Edit error:', err);
-      setMessage('❌ Server error during update');
+      setMessage('Server error during update');
     }
   };
 
@@ -119,25 +119,25 @@ export default function EditEmployee() {
       });
       const data = await res.json();
       console.log('Delete response:', data);
-      setMessage(data.message || (data.success ? '✅ Deleted successfully' : '❌ Deletion failed'));
+      setMessage(data.message || (data.success ? 'Deleted successfully' : 'Deletion failed'));
       if (data.success) fetchEmployees();
     } catch (err) {
       console.error('Delete error:', err);
-      setMessage('❌ Server error during deletion');
+      setMessage('Server error during deletion');
     }
   };
 
   const handleKeySubmit = (e) => {
     e.preventDefault();
     if (!inputKey.trim()) {
-      setMessage('❌ Please enter a passkey');
+      setMessage('Please enter a passkey');
       return;
     }
     if (inputKey === DEALER_PASSKEY) {
       setPasskeyEntered(true);
       setMessage('');
     } else {
-      setMessage('❌ Incorrect passkey');
+      setMessage('Incorrect passkey');
     }
   };
 

@@ -148,11 +148,11 @@ export default function App() {
               fontSize: 14
             }}
           >
-            <option value="">📂 Select Action</option>
-            <option value="attendance">📝 Take Attendance</option>
-            <option value="register">➕ Register Employee</option>
-            <option value="data">📊 Data</option>
-            <option value="edit">✏️ Edit/Delete Employee</option> {/* ✅ Add this */}
+            <option value="">Select Action</option>
+            <option value="attendance">Take Attendance</option>
+            <option value="register">Register Employee</option>
+            <option value="data">Data</option>
+            <option value="edit">Edit/Delete Employee</option> {/* ✅ Add this */}
           </select>
 
         </div>

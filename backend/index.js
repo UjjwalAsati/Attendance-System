@@ -31,8 +31,8 @@ if (process.env.DEFAULT_USER === 'jatashankar_auto@rediffmail.com') {
 }
 
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log('✅ MongoDB connected'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
 
 function getISTDayBounds(date) {
@@ -501,11 +501,11 @@ app.post('/edit-employee/:id', async (req, res) => {
 
     res.json({
       success: true,
-      message: '✅ Name updated successfully',
+      message: 'Name updated successfully',
       employee,
     });
   } catch (err) {
-    console.error('❌ Error updating employee:', err);
+    console.error('Error updating employee:', err);
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -538,4 +538,4 @@ app.get('/', (req, res) => {
   res.send('Attendance backend is running.');
 });
 
-app.listen(port, () => console.log(`🚀 Backend running on port ${port}`));
+app.listen(port, () => console.log(`Backend running on port ${port}`));

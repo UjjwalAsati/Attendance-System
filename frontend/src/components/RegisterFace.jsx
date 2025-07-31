@@ -16,7 +16,7 @@ export default function RegisterFace() {
         startCamera();
       } catch (err) {
         console.error('Model load error:', err);
-        setStatus('❌ Failed to load face-api models.');
+        setStatus('Failed to load face-api models.');
       }
     };
 
@@ -50,9 +50,9 @@ export default function RegisterFace() {
     } catch (err) {
       console.error('Camera error:', err);
       if (err.name === 'NotReadableError') {
-        setStatus('❌ Camera is in use by another app.');
+        setStatus('Camera is in use by another app.');
       } else {
-        setStatus('❌ Failed to start camera.');
+        setStatus('Failed to start camera.');
       }
     }
   };
@@ -64,7 +64,7 @@ export default function RegisterFace() {
   const handleRegister = async () => {
     setStatus('');
     if (!name.trim()) {
-      return setStatus('⚠️ Please enter a valid name.');
+      return setStatus('Please enter a valid name.');
     }
 
     const detection = await faceapi
@@ -73,14 +73,14 @@ export default function RegisterFace() {
       .withFaceDescriptor();
 
     if (!detection) {
-      return setStatus('😐 No face detected. Please try again.');
+      return setStatus('No face detected. Please try again.');
     }
 
     const faceDescriptor = Array.from(detection.descriptor);
     const username = localStorage.getItem('username');
 
     if (!username) {
-      return setStatus('⚠️ User not logged in. Username missing.');
+      return setStatus('User not logged in. Username missing.');
     }
 
     try {
@@ -92,14 +92,14 @@ export default function RegisterFace() {
 
       const data = await res.json();
       if (data.success) {
-        setStatus('✅ Employee registered successfully!');
+        setStatus('Employee registered successfully!');
         setName('');
       } else {
-        setStatus(data.message || '❌ Registration failed.');
+        setStatus(data.message || 'Registration failed.');
       }
     } catch (err) {
       console.error(err);
-      setStatus('❌ Server error during registration.');
+      setStatus('Server error during registration.');
     }
   };
 

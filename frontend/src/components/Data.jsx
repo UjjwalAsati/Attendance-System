@@ -24,8 +24,8 @@ export default function Data() {
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('❌ Error downloading Excel:', error);
-      setMessage('❌ Error downloading Excel.');
+      console.error('Error downloading Excel:', error);
+      setMessage('Error downloading Excel.');
     }
   };
 
@@ -33,8 +33,8 @@ export default function Data() {
     <div style={{ textAlign: 'center', marginTop: '30px' }}>
       <h2>Attendance Data</h2>
       <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '15px' }}>
-        <button onClick={handleDownloadExcel}>📥 Export Attendance Excel</button>
-        <button onClick={handleDownloadOverview}>📥 Download Overview</button>
+        <button onClick={handleDownloadExcel}>Export Attendance Excel</button>
+        <button onClick={handleDownloadOverview}>Download Overview</button>
       </div>
       {message && <p style={{ marginTop: '15px' }}>{message}</p>}
     </div>

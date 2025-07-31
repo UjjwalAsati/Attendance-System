@@ -42,8 +42,8 @@ export default function Attendance({ onLogout }) {
           videoRef.current.onloadedmetadata = () => videoRef.current.play();
         }
       } catch (err) {
-        console.error('📷 Camera error:', err);
-        setMessage('❌ Camera error: ' + err.message);
+        console.error('Camera error:', err);
+        setMessage('Camera error: ' + err.message);
       }
     };
 
@@ -73,7 +73,7 @@ export default function Attendance({ onLogout }) {
         .withFaceDescriptor();
 
       if (!detection) {
-        setMessage('❌ No face detected, please try again.');
+        setMessage('No face detected, please try again.');
         setSending(false);
         return;
       }
@@ -100,18 +100,18 @@ const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/submit-attenda
           hour12: true,
         });
 
-        setMessage(`✅ ${type === 'checkin' ? 'Check-in' : 'Checkout'} recorded for ${json.name} at ${istTimeStr}`);
+        setMessage(`${type === 'checkin' ? 'Check-in' : 'Checkout'} recorded for ${json.name} at ${istTimeStr}`);
         successAudioRef.current.play();
 
         if (navigator.vibrate) navigator.vibrate(300);
 
         triggerFlash(type === 'checkin' ? 'green' : 'blue');
       } else {
-        setMessage(`ℹ️ ${json.message || 'Attendance not recorded.'}`);
+        setMessage(`${json.message || 'Attendance not recorded.'}`);
       }
     } catch (err) {
-      console.error(`❌ Error during ${type}:`, err);
-      setMessage('❌ Error: ' + err.message);
+      console.error(`Error during ${type}:`, err);
+      setMessage('Error: ' + err.message);
     }
     setSending(false);
   };
@@ -176,7 +176,7 @@ const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/submit-attenda
               Stop
             </button>
           </div>
-          {mode && <p style={{ marginTop: '10px' }}>🔄 Current mode: <strong>{mode}</strong></p>}
+          {mode && <p style={{ marginTop: '10px' }}>Current mode: <strong>{mode}</strong></p>}
           {message && <p style={{ marginTop: '10px' }}>{message}</p>}
         </>
       )}

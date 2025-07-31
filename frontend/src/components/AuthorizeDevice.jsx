@@ -13,9 +13,9 @@ export default function AuthorizeDevice() {
   const handleSetToken = () => {
     if (inputToken === DEVICE_TOKEN) {
       localStorage.setItem('authorizedDeviceToken', DEVICE_TOKEN);
-      setMessage('✅ Device authorized successfully!');
+      setMessage('Device authorized successfully!');
     } else {
-      setMessage('❌ Invalid token!');
+      setMessage('Invalid token!');
     }
   };
 
