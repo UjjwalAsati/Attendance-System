@@ -1,0 +1,129 @@
+:root {
+  --primary-color: #3056d3;
+  --background-light: #f9fafb;
+  --background-dark: #121212;
+  --text-light: #444444;
+  --text-dark: #f0f0f0;
+  --input-bg-light: #fff;
+  --input-bg-dark: #222;
+  --input-border-light: #ccc;
+  --input-border-dark: #444;
+  --btn-bg-light: #2563eb;
+  --btn-bg-dark: #3b82f6;
+  --btn-hover-light: #3b82f6;
+  --btn-hover-dark: #60a5fa;
+  --status-success: #16a34a;
+  --status-error: #dc2626;
+}
+
+body.dark {
+  background-color: var(--background-dark);
+  color: var(--text-dark);
+}
+
+.register-face-container {
+  max-width: 530px;
+  margin: 2rem auto 3rem;
+  background: var(--background-light);
+  color: var(--text-light);
+  padding: 2rem 1.5rem 2.5rem 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  font-family: system-ui, sans-serif;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.register-face-container.dark {
+  background: var(--background-dark);
+  color: var(--text-dark);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8);
+}
+
+.heading {
+  font-size: 1.9rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+  user-select: none;
+}
+
+.video-feed {
+  border: 2px solid var(--input-border-light);
+  border-radius: 0.625rem;
+  width: 100%;        
+  max-width: 450px;   
+  height: 240px;
+  object-fit: cover;
+  margin: 0 auto 1rem auto; 
+  box-sizing: border-box;
+  transition: border-color 0.3s;
+  transform: scaleX(-1);
+}
+
+
+.register-face-container.dark .video-feed {
+  border-color: var(--input-border-dark);
+}
+
+.input-name {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  font-size: 1rem;
+  border: 1.5px solid var(--input-border-light);
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  outline: none;
+  background-color: var(--input-bg-light);
+  color: var(--text-light);
+  transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+  box-sizing: border-box;
+}
+
+.register-face-container.dark .input-name {
+  border-color: var(--input-border-dark);
+  background-color: var(--input-bg-dark);
+  color: var(--text-dark);
+}
+
+.input-name:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 5px var(--primary-color);
+}
+
+.btn {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 1rem;
+  transition: background-color 0.3s;
+  color: white;
+  background-color: var(--btn-bg-light);
+}
+
+.register-face-container.dark .btn {
+  background-color: var(--btn-bg-dark);
+}
+
+.btn:hover:not(:disabled) {
+  background-color: var(--btn-hover-light);
+}
+
+.register-face-container.dark .btn:hover:not(:disabled) {
+  background-color: var(--btn-hover-dark);
+}
+
+.status-message {
+  min-height: 1.5em;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--status-error);
+  user-select: none;
+  white-space: pre-line;
+}

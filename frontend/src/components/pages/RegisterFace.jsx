@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as faceapi from 'face-api.js';
-import { loadFaceModels } from '../utils/loadFaceModels'; 
+import { loadFaceModels } from '../../utils/loadFaceModels';
+import '../styles/RegisterFace.css';
 
 export default function RegisterFace() {
   const videoRef = useRef(null);
@@ -8,6 +9,14 @@ export default function RegisterFace() {
   const [status, setStatus] = useState('');
   const [facingMode, setFacingMode] = useState('user');
   const [stream, setStream] = useState(null);
+  const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    const savedMode = localStorage.getItem('darkMode') === 'true';
+    setDarkMode(savedMode);
+    if (savedMode) document.body.classList.add('dark');
+    else document.body.classList.remove('dark');
+  }, []);
 
   useEffect(() => {
     const loadModelsAndStartCamera = async () => {
@@ -21,17 +30,18 @@ export default function RegisterFace() {
     };
 
     loadModelsAndStartCamera();
+
     return () => {
       if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [facingMode]);
-
+  }, [facingMode]); 
+  
   const startCamera = async () => {
     try {
       if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       }
 
       const mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -41,12 +51,11 @@ export default function RegisterFace() {
 
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current.play();
-        };
+        videoRef.current.onloadedmetadata = () => videoRef.current.play();
       }
 
       setStream(mediaStream);
+      setStatus('');
     } catch (err) {
       console.error('Camera error:', err);
       if (err.name === 'NotReadableError') {
@@ -64,26 +73,29 @@ export default function RegisterFace() {
   const handleRegister = async () => {
     setStatus('');
     if (!name.trim()) {
-      return setStatus('Please enter a valid name.');
-    }
-
-    const detection = await faceapi
-      .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
-      .withFaceLandmarks()
-      .withFaceDescriptor();
-
-    if (!detection) {
-      return setStatus('No face detected. Please try again.');
-    }
-
-    const faceDescriptor = Array.from(detection.descriptor);
-    const username = localStorage.getItem('username');
-
-    if (!username) {
-      return setStatus('User not logged in. Username missing.');
+      setStatus('Please enter a valid name.');
+      return;
     }
 
     try {
+      const detection = await faceapi
+        .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+
+      if (!detection) {
+        setStatus('No face detected. Please try again.');
+        return;
+      }
+
+      const faceDescriptor = Array.from(detection.descriptor);
+      const username = localStorage.getItem('username');
+
+      if (!username) {
+        setStatus('User not logged in. Username missing.');
+        return;
+      }
+
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/register-face`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -104,33 +116,31 @@ export default function RegisterFace() {
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Register New Employee</h2>
+    <section className={`register-face-container ${darkMode ? 'dark' : ''}`}>
+      <h2 className="heading">Register New Employee</h2>
       <video
         ref={videoRef}
         autoPlay
         muted
         width="320"
         height="240"
-        style={{ border: '1px solid black', marginBottom: 10 }}
+        className="video-feed"
       />
       <input
         type="text"
         placeholder="Employee Name"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        style={{ marginBottom: 10, padding: 8, width: '100%' }}
+        className="input-name"
+        autoComplete="off"
       />
-      <br />
-      <button onClick={handleRegister} style={{ padding: 10, width: '100%' }}>
+      <button onClick={handleRegister} className="btn register-btn">
         Register Face
       </button>
-      <p>{status}</p>
-      <br />
-      <button onClick={handleSwitchCamera} style={{ marginBottom: 10, padding: 8 }}>
+      <p className="status-message">{status}</p>
+      <button onClick={handleSwitchCamera} className="btn switch-btn">
         Switch Camera
       </button>
-      <br />
-    </div>
+    </section>
   );
 }

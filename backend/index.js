@@ -26,7 +26,7 @@ if (process.env.DEFAULT_USER === 'jatashankar_auto@rediffmail.com') {
 } else if (process.env.DEFAULT_USER === 'jatashankarsalesandservices@gmail.com') {
   MONGODB_URI = process.env.MONGODB_URI_JSS;
 } else {
-  console.error('❌ No matching MONGODB_URI for DEFAULT_USER');
+  console.error('No matching MONGODB_URI for DEFAULT_USER');
   process.exit(1);
 }
 
@@ -66,7 +66,7 @@ app.post('/register-face', async (req, res) => {
     await employee.save();
     res.json({ success: true, message: 'Face registered successfully' });
   } catch (error) {
-    console.error('❌ Error registering face:', error);
+    console.error('Error registering face:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -89,7 +89,7 @@ app.post('/submit-attendance', async (req, res) => {
 
     for (const emp of employees) {
       const dist = euclideanDistance(emp.faceDescriptor, descriptor);
-      if (dist < 0.5) {
+      if (dist < 0.4) {
         matchedEmployee = emp;
         break;
       }
@@ -125,7 +125,7 @@ app.post('/submit-attendance', async (req, res) => {
       if (!checkinToday) {
         return res.json({
           success: false,
-          message: '❌ Checkout denied: Check-in not recorded today'
+          message: 'Checkout denied: Check-in not recorded today'
         });
       }
     }
@@ -147,7 +147,7 @@ app.post('/submit-attendance', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error saving attendance:', error);
+    console.error('Error saving attendance:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -187,7 +187,7 @@ app.get('/all-employees', async (req, res) => {
     const employees = await Employee.find();
     res.json(employees);
   } catch (error) {
-    console.error('❌ Error fetching employees:', error);
+    console.error('Error fetching employees:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });

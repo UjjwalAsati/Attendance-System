@@ -1,0 +1,86 @@
+:root {
+  --primary-color: #3056d3;
+  --background-light: #f9fafb;
+  --background-dark: #121212;
+  --text-light: #444444;
+  --text-dark: #f0f0f0;
+  --btn-bg-light: #2563eb;
+  --btn-bg-dark: #3b82f6;
+  --btn-hover-light: #3b82f6;
+  --btn-hover-dark: #60a5fa;
+  --error-color: #e53e3e;
+}
+
+body.dark {
+  background-color: var(--background-dark);
+  color: var(--text-dark);
+}
+
+.data-container {
+  max-width: 530px;
+  margin: 2rem auto 3rem;
+  background: var(--background-light);
+  color: var(--text-light);
+  padding: 2rem 1.5rem 2.5rem 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+  text-align: center;
+  font-family: system-ui, sans-serif;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.data-container.dark {
+  background: var(--background-dark);
+  color: var(--text-dark);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8);
+}
+
+.heading {
+  font-size: 1.9rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+  user-select: none;
+}
+
+.buttons-group {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 15px;
+}
+
+.btn {
+  padding: 0.75rem 1.25rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  border: none;
+  background-color: var(--btn-bg-light);
+  color: white;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.3s;
+  min-width: 180px;
+}
+
+.data-container.dark .btn {
+  background-color: var(--btn-bg-dark);
+}
+
+.btn:hover:not(:disabled) {
+  background-color: var(--btn-hover-light);
+}
+
+.data-container.dark .btn:hover:not(:disabled) {
+  background-color: var(--btn-hover-dark);
+}
+
+.message {
+  margin-top: 15px;
+  font-weight: 600;
+  color: var(--error-color);
+  min-height: 1.4em;
+  user-select: none;
+}

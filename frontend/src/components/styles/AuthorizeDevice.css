@@ -1,0 +1,123 @@
+:root {
+  --primary-color: #3056d3;
+  --background-light: #f9fafb;
+  --background-dark: #121212;
+  --text-light: #444444;
+  --text-dark: #f0f0f0;
+  --input-bg-light: #fff;
+  --input-bg-dark: #222;
+  --input-border-light: #ccc;
+  --input-border-dark: #444;
+  --btn-bg-light: #2563eb;
+  --btn-bg-dark: #3b82f6;
+  --btn-hover-light: #3b82f6;
+  --btn-hover-dark: #60a5fa;
+  --status-success: #16a34a;
+  --status-error: #dc2626;
+}
+
+body.dark {
+  background-color: var(--background-dark);
+  color: var(--text-dark);
+}
+
+.authorize-container {
+  max-width: 400px;
+  margin: 3rem auto;
+  background: var(--background-light);
+  color: var(--text-light);
+  padding: 2.5rem 2rem 2rem 2rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+  font-family: system-ui, sans-serif;
+  text-align: center;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.authorize-container.dark {
+  background: var(--background-dark);
+  color: var(--text-dark);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.8);
+}
+
+.heading {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+  user-select: none;
+}
+
+.input-token {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  font-size: 1rem;
+  border: 1.5px solid var(--input-border-light);
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  outline: none;
+  background-color: var(--input-bg-light);
+  color: var(--text-light);
+  box-sizing: border-box;
+  transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+}
+
+.authorize-container.dark .input-token {
+  border-color: var(--input-border-dark);
+  background-color: var(--input-bg-dark);
+  color: var(--text-dark);
+}
+
+.input-token:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 5px var(--primary-color);
+}
+
+.btn {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 1rem;
+  color: white;
+  background-color: var(--btn-bg-light);
+  transition: background-color 0.3s;
+}
+
+.authorize-container.dark .btn {
+  background-color: var(--btn-bg-dark);
+}
+
+.btn:hover:not(:disabled) {
+  background-color: var(--btn-hover-light);
+}
+
+.authorize-container.dark .btn:hover:not(:disabled) {
+  background-color: var(--btn-hover-dark);
+}
+
+.message {
+  min-height: 1.5em;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.8rem;
+  user-select: none;
+}
+
+.message.error {
+  color: var(--status-error);
+}
+
+.message.success {
+  color: var(--status-success);
+}
+
+.note {
+  font-size: 0.8rem;
+  color: #666;
+  user-select: none;
+}

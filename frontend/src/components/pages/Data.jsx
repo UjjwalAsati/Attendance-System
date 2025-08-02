@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import '../styles/Data.css';
 
 export default function Data() {
   const [message, setMessage] = useState('');
@@ -30,13 +31,17 @@ export default function Data() {
   };
 
   return (
-    <div style={{ textAlign: 'center', marginTop: '30px' }}>
-      <h2>Attendance Data</h2>
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '15px' }}>
-        <button onClick={handleDownloadExcel}>Export Attendance Excel</button>
-        <button onClick={handleDownloadOverview}>Download Overview</button>
+    <section className="data-container">
+      <h2 className="heading">Attendance Data</h2>
+      <div className="buttons-group">
+        <button className="btn" onClick={handleDownloadExcel}>
+          Export Attendance Excel
+        </button>
+        <button className="btn" onClick={handleDownloadOverview}>
+          Download Overview
+        </button>
       </div>
-      {message && <p style={{ marginTop: '15px' }}>{message}</p>}
-    </div>
+      {message && <p className="message">{message}</p>}
+    </section>
   );
 }
