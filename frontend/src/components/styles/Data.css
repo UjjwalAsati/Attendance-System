@@ -84,3 +84,36 @@ body.dark {
   min-height: 1.4em;
   user-select: none;
 }
+.date-range-picker {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.date-range-picker label {
+  font-weight: 600;
+  color: var(--primary-color);
+  user-select: none;
+}
+
+.date-range-picker input[type="date"] {
+  padding: 0.4rem 0.6rem;
+  font-size: 1rem;
+  border-radius: 0.4rem;
+  border: 1.5px solid #ccc;
+  transition: border-color 0.3s;
+  user-select: text;
+}
+
+.date-range-picker input[type="date"]:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 4px var(--primary-color);
+}
+
+.data-container.dark .date-range-picker input[type="date"] {
+  background-color: #2a2a2a;
+  border-color: #555;
+  color: var(--text-dark);
+}

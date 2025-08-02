@@ -44,13 +44,22 @@ body.dark .attendance-video {
   font-weight: 800;
   letter-spacing: -1px;
   margin-bottom: 1.5rem;
-  color: #3056d3;
-  background: linear-gradient(90deg,#2563eb 50%,#22c55e);
+  text-align: center;
+  background: linear-gradient(90deg, #2563eb 50%, #22c55e);
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
+  white-space: nowrap; 
 }
+
+@media (max-width: 480px) {
+  .attendance-heading {
+    font-size: 1.75rem;
+  }
+}
+
+
 
 .attendance-msg {
   width: 350px;
@@ -109,8 +118,23 @@ body.dark .attendance-video {
   justify-content: center;
   flex-wrap: nowrap;
   gap: 1rem;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+  align-items: center;
+}
+.attendance-buttons .top-row {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
 }
 
+.attendance-buttons .bottom-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
 .attendance-buttons button {
   flex: 0 0 auto;
   min-width: 120px;

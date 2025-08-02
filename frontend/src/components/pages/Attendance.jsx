@@ -113,7 +113,8 @@ export default function AttendancePage({ onLogout }) {
 
   return (
     <div className={`attendance-main ${flash === 'green' ? 'flash-green' : flash === 'blue' ? 'flash-blue' : ''}`}>
-      <h2 className="attendance-heading">Attendance Portal</h2>
+      <h2 className="attendance-heading">Attendance&nbsp;Portal</h2>
+
       {loadingModels ? (
         <div className="attendance-msg info">Loading face detection models...</div>
       ) : (
@@ -127,13 +128,23 @@ export default function AttendancePage({ onLogout }) {
             className="attendance-video"
           />
           <div className="attendance-buttons">
+            <div className="top-row">
             <button
               onClick={() => setMode('checkin')}
               className={mode === 'checkin' ? 'active' : ''}
               type="button"
             >
-              Auto Check-in
+              Check-in
             </button>
+            <button
+              onClick={() => setMode('checkout')}
+              className={mode === 'checkout' ? 'active' : ''}
+              type="button"
+            >
+              Check-out
+            </button>
+            </div>
+            <div className="bottom-row">
             <button
               onClick={() => setMode(null)}
               className={mode === null ? 'active' : ''}
@@ -141,13 +152,7 @@ export default function AttendancePage({ onLogout }) {
             >
               Stop
             </button>
-            <button
-              onClick={() => setMode('checkout')}
-              className={mode === 'checkout' ? 'active' : ''}
-              type="button"
-            >
-              Auto Check-out
-            </button>
+          </div>
           </div>
           {mode && (
             <div

@@ -41,12 +41,25 @@ body.dark {
 }
 
 .heading {
-  font-size: 1.9rem;
-  font-weight: 700;
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -1px;
   margin-bottom: 1.5rem;
-  color: var(--primary-color);
-  user-select: none;
+  text-align: center;
+  background: linear-gradient(90deg, #2563eb 50%, #22c55e);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  white-space: nowrap; 
 }
+
+@media (max-width: 480px) {
+  .heading {
+    font-size: 1.75rem;
+  }
+}
+
 
 .video-feed {
   border: 2px solid var(--input-border-light);

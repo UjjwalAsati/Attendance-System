@@ -195,54 +195,47 @@ app.get('/all-employees', async (req, res) => {
 
 app.get('/download-attendance', async (req, res) => {
   try {
-    const { username } = req.query;
+    const { username, from, to } = req.query;
 
     if (!username) {
       return res.status(400).send('Missing username');
     }
 
+    if (!from || !to) {
+      return res.status(400).send('Missing from or to date');
+    }
+
+    const MS_IN_DAY = 24 * 60 * 60 * 1000;
+
+    const fromDateUTC = new Date(`${from}T00:00:00Z`);
+    const toDateUTC = new Date(`${to}T00:00:00Z`);
+
+    if (isNaN(fromDateUTC.getTime()) || isNaN(toDateUTC.getTime())) {
+      return res.status(400).send('Invalid date format. Use YYYY-MM-DD');
+    }
+
+    const dateList = [];
+    for (let d = fromDateUTC.getTime(); d <= toDateUTC.getTime(); d += MS_IN_DAY) {
+      const day = new Date(d);
+      const yyyy = day.getUTCFullYear();
+      const mm = String(day.getUTCMonth() + 1).padStart(2, '0');
+      const dd = String(day.getUTCDate()).padStart(2, '0');
+      dateList.push(`${yyyy}-${mm}-${dd}`);
+    }
+
+    const fromDateISTStartUTC = new Date(fromDateUTC.getTime() - 5.5 * 60 * 60 * 1000);
+    const toDateISTEndUTC = new Date(toDateUTC.getTime() - 5.5 * 60 * 60 * 1000 + MS_IN_DAY - 1);
+
     const { Employee, Attendance } = await getTenantModels(username);
 
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-
-    const firstOfMonth = new Date(year, month, 1);
-    const lastMonth = new Date(firstOfMonth);
-    lastMonth.setDate(0);
-    
-    const day1 = new Date(lastMonth);
-    day1.setDate(lastMonth.getDate() - 1);
-
-    const startDate = new Date(day1.setHours(0, 0, 0, 0));
-    const endDate = new Date(now.setHours(23, 59, 59, 999));
-
     const records = await Attendance.find({
-      timestamp: { $gte: startDate, $lte: endDate }
+      timestamp: { $gte: fromDateISTStartUTC, $lte: toDateISTEndUTC }
     }).sort({ timestamp: 1 });
 
     const allEmployees = await Employee.find();
 
     if (records.length === 0) {
       return res.status(404).send('No attendance records found.');
-    }
-
-    const istOffsetMs = 5.5 * 60 * 60 * 1000;
-    const dateList = [];
-
-    const cur = new Date(startDate.getTime() + istOffsetMs);
-    cur.setUTCHours(0, 0, 0, 0);
-
-    while (cur <= endDate) {
-      const dateStr = new Date(cur.getTime() - istOffsetMs).toISOString().split('T')[0];
-      dateList.push(dateStr);
-      cur.setUTCDate(cur.getUTCDate() + 1);
-    }
-
-    const todayIST = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-    const todayYMD = todayIST.toISOString().split('T')[0];
-    if (!dateList.includes(todayYMD)) {
-      dateList.push(todayYMD);
     }
 
     const grouped = {};
@@ -335,8 +328,7 @@ app.get('/download-attendance', async (req, res) => {
       }
     }
 
-    const monthName = now.toLocaleString('en-IN', { month: 'long' });
-    const filename = `attendance_${username}_${monthName}_${year}_plus2days.xlsx`;
+    const filename = `attendance_${username}_${from}_to_${to}.xlsx`;
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
@@ -348,6 +340,9 @@ app.get('/download-attendance', async (req, res) => {
     res.status(500).send('Error generating Excel');
   }
 });
+
+
+
 
 
 
