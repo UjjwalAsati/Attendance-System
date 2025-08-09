@@ -15,7 +15,7 @@ export default function AttendancePage({ onLogout }) {
   useEffect(() => {
     const loadModels = async () => {
       const MODEL_URL = '/models';
-      await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
       await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
       await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
       setLoadingModels(false);
@@ -62,7 +62,7 @@ export default function AttendancePage({ onLogout }) {
     setMessage('');
     try {
       const detection = await faceapi
-      .detectSingleFace(videoRef.current, new faceapi.SsdMobilenetv1Options())
+      .detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
       .withFaceLandmarks()
       .withFaceDescriptor();
 
