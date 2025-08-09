@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import '../styles/EditEmployee.css'
 
 export default function EditEmployee() {
-    
   const [passkeyEntered, setPasskeyEntered] = useState(false)
   const [inputKey, setInputKey] = useState('')
   const [employees, setEmployees] = useState([])
@@ -10,6 +9,7 @@ export default function EditEmployee() {
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
 
   const username = localStorage.getItem('username')
   const DEALER_PASSKEY = import.meta.env.VITE_DEALER_PASSKEY
@@ -31,6 +31,7 @@ export default function EditEmployee() {
       if (!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`)
       const data = await res.json()
       if (!data || !Array.isArray(data.employees)) throw new Error('Invalid data format: employees array missing')
+
       const processedEmployees = data.employees.map(emp => ({
         ...emp,
         displayName: emp.employeeName || emp.name || emp.fullName || 'Unnamed Employee',
@@ -39,6 +40,7 @@ export default function EditEmployee() {
       const names = {}
       processedEmployees.forEach(emp => { names[emp._id] = emp.displayName })
       setEditNames(names)
+
       setMessage(`Loaded ${processedEmployees.length} employees`)
     } catch (err) {
       setMessage(`Error: ${err.message}`)
@@ -66,9 +68,12 @@ export default function EditEmployee() {
       })
       const data = await res.json()
       setMessage(data.message || (data.success ? 'Updated successfully' : 'Update failed'))
-      if (data.success) setEmployees(prev =>
-        prev.map(emp => (emp._id === id ? { ...emp, displayName: newName } : emp))
-      )
+
+      if (data.success) {
+        setEmployees(prev => prev.map(emp =>
+          emp._id === id ? { ...emp, displayName: newName } : emp
+        ))
+      }
     } catch {
       setMessage('Server error during update')
     }
@@ -98,6 +103,13 @@ export default function EditEmployee() {
       setMessage('Incorrect passkey')
     }
   }
+
+  // ✅ Live search filtering
+  const filteredEmployees = useMemo(() => {
+    return employees.filter(emp =>
+      emp.displayName.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  }, [employees, searchTerm])
 
   if (!passkeyEntered) {
     return (
@@ -129,6 +141,17 @@ export default function EditEmployee() {
 
   return (
     <div className={`container${darkMode ? ' dark' : ''}`}>
+      {/* Search bar */}
+      <div className="search-container">
+        <input
+          type="text"
+          placeholder="Search employee"
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          className="search-input"
+        />
+      </div>
+
       <div className="debug-panel">
         <h4>Information</h4>
         <p><strong>ID:</strong> {username}</p>
@@ -140,10 +163,10 @@ export default function EditEmployee() {
 
       {isLoading ? (
         <p className="loading-message">Loading employees...</p>
-      ) : employees.length === 0 ? (
+      ) : filteredEmployees.length === 0 ? (
         <p className="no-employees">No employees found.</p>
       ) : (
-        employees.map(emp => (
+        filteredEmployees.map(emp => (
           <div key={emp._id} className="employee-card">
             <div className="employee-header">
               <p><strong>Name:</strong> {emp.displayName}</p>
@@ -170,6 +193,7 @@ export default function EditEmployee() {
           </div>
         ))
       )}
+
       {message && <p className="message">{message}</p>}
     </div>
   )
