@@ -89,7 +89,7 @@ app.post('/submit-attendance', async (req, res) => {
 
     for (const emp of employees) {
       const dist = euclideanDistance(emp.faceDescriptor, descriptor);
-      if (dist < 0.4) {
+      if (dist < 0.45) {
         matchedEmployee = emp;
         break;
       }
