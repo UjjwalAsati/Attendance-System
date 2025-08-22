@@ -12,7 +12,7 @@ app.use(cors({
   origin: [
     'http://localhost:5173',
     'https://attendance-system-phi-gules.vercel.app', 
-    'https://attendance-system-gwr9.onrender.com/'     
+    'https://attendance-system-n7d1.onrender.com'     
   ],
   credentials: true
 }));
