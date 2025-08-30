@@ -2,29 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { loadFaceModels } from '../../utils/loadFaceModels';
 import '../styles/Login.css';
 
-const DEVICE_TOKEN = import.meta.env.VITE_DEVICE_AUTH_TOKEN;
-
-export default function Login({ onLogin, setDeviceAuthorized }) {
+export default function Login({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
-  const [deviceAuthorized, setLocalDeviceAuthorized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
-  const [authToken, setAuthToken] = useState('');
-  const [authError, setAuthError] = useState(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('authorizedDeviceToken');
-    const authorized = token === DEVICE_TOKEN;
-    setDeviceAuthorized(authorized);
-    setLocalDeviceAuthorized(authorized);
-
     const savedMode = localStorage.getItem('darkMode') === 'true';
     setDarkMode(savedMode);
     if (savedMode) document.body.classList.add('dark');
     else document.body.classList.remove('dark');
-  }, [setDeviceAuthorized]);
+  }, []);
 
   const toggleDarkMode = () => {
     setDarkMode(prev => {
@@ -36,27 +26,10 @@ export default function Login({ onLogin, setDeviceAuthorized }) {
     });
   };
 
-  const handleAuthorize = () => {
-    if (authToken === DEVICE_TOKEN) {
-      localStorage.setItem('authorizedDeviceToken', DEVICE_TOKEN);
-      setDeviceAuthorized(true);
-      setLocalDeviceAuthorized(true);
-      setAuthError(null);
-    } else {
-      setAuthError('Invalid token. Please try again.');
-    }
-  };
-
   const handleLogin = async (e) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
-    if (!deviceAuthorized) {
-      setError('Unauthorized device! Please authorize this device first.');
-      setLoading(false);
-      return;
-    }
 
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/login`, {
@@ -82,7 +55,6 @@ export default function Login({ onLogin, setDeviceAuthorized }) {
         if (typeof onLogin === 'function') {
           onLogin(email);
         } else {
-          console.error('onLogin is not a function');
           setError('Internal client error. Please refresh.');
         }
       } else {
@@ -94,43 +66,6 @@ export default function Login({ onLogin, setDeviceAuthorized }) {
       setError('Server error, try again later');
     }
   };
-
-  if (!deviceAuthorized) {
-    return (
-      <section className={`login-container unauthorized-fancy ${darkMode ? 'dark' : ''}`}>
-        <div className="unauthorized-box">
-          <button className="dark-toggle-btn" onClick={toggleDarkMode}>
-            {darkMode ? 'Light Mode' : 'Dark Mode'}
-          </button>
-          <div className="unauth-emoji">
-            <svg height="56" width="56" viewBox="0 0 56 56">
-              <circle cx="28" cy="28" r="28" fill={darkMode ? '#ef4444' : '#fee2e2'} />
-              <path d="M20 24l16 0" stroke="#dc2626" strokeWidth="3" strokeLinecap="round" />
-              <circle cx="28" cy="36" r="2" fill="#dc2626" />
-            </svg>
-          </div>
-          <h2 className="unauth-title">Oops! You're Not Authorized</h2>
-          <p className="unauth-desc">Enter your secret device token to authorize this browser.</p>
-          <input
-            type="text"
-            className="unauth-input"
-            placeholder="Enter secret token"
-            value={authToken}
-            onChange={e => {
-              setAuthToken(e.target.value);
-              setAuthError(null);
-            }}
-            autoFocus
-          />
-          <button className="unauth-btn" onClick={handleAuthorize}>
-            Authorize Device
-          </button>
-          {authError && <div className="unauth-error">{authError}</div>}
-          <div className="unauth-note">* This will be remembered in this browser.</div>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section className={`login-container ${darkMode ? 'dark' : ''}`}>

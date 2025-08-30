@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import './App.css';
 import Home from './components/pages/Home';
 import Login from './components/pages/Login';
+import DeviceAuth from './components/pages/AuthorizeDevice';
 
 function App() {
   const [userEmail, setUserEmail] = useState(localStorage.getItem('username') || '');
@@ -15,25 +16,27 @@ function App() {
       attendanceRef.current.stopCamera();
     }
     setUserEmail('');
-    setDeviceAuthorized(false);
     localStorage.removeItem('username');
     window.location.reload();
   };
 
   const handleLogin = (email) => {
     setUserEmail(email);
+    localStorage.setItem('username', email);
   };
 
   return (
     <div className="App">
-      {userEmail && deviceAuthorized ? (
+      {!deviceAuthorized ? (
+        <DeviceAuth setDeviceAuthorized={setDeviceAuthorized} />
+      ) : !userEmail ? (
+        <Login onLogin={handleLogin} />
+      ) : (
         <Home
           userEmail={userEmail}
           handleLogout={handleLogout}
           attendanceRef={attendanceRef}
         />
-      ) : (
-        <Login onLogin={handleLogin} setDeviceAuthorized={setDeviceAuthorized} />
       )}
     </div>
   );
