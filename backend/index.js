@@ -525,6 +525,24 @@ app.delete('/delete-employee/:id', async (req, res) => {
 });
 
 
+app.delete('/cleanup-old', async (req, res) => {
+  try {
+    const { username } = req.query;
+    if (!username) return res.status(400).json({ success: false, message: 'Username required' });
+
+    const { Attendance } = await getTenantModels(username);
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - 60);
+
+    const result = await Attendance.deleteMany({ timestamp: { $lt: cutoffDate } });
+
+    res.json({ success: true, deletedCount: result.deletedCount });
+  } catch (err) {
+    console.error('Cleanup error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
 
 
 
