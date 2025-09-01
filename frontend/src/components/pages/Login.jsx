@@ -40,11 +40,17 @@ export default function Login({ onLogin }) {
       });
 
       if (!res.ok) {
-        const errorText = await res.text();
+        try {
+          const errorData = await res.json();
+          setError(errorData.message || `Login failed with status ${res.status}`);
+        } catch {
+          const errorText = await res.text();
+          setError(errorText || `Login failed with status ${res.status}`);
+        }
         setLoading(false);
-        setError(errorText || `Login failed with status ${res.status}`);
         return;
       }
+
 
       const data = await res.json();
       setLoading(false);

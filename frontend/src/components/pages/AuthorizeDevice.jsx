@@ -28,14 +28,16 @@ export default function AuthorizeDevice({ setDeviceAuthorized }) {
   };
 
   const handleGuestLogin = () => {
-    localStorage.setItem('username', 'guest');
-    localStorage.setItem('isGuest', 'true');
-    window.location.reload();
-  };
+  localStorage.setItem('username', 'guest');
+  localStorage.setItem('isGuest', 'true');
+  window.location.reload();
+};
+
 
   return (
     <section className={`authorize-container ${darkMode ? 'dark' : ''}`}>
-      <h2 className="heading error-text">Oops! You're Not Authorized</h2>
+      <h2 className="heading error-text">Oops! You're Not <br></br>Authorized</h2>
+
       <p>Enter your secret device token to authorize this browser.</p>
 
       <input

@@ -93,55 +93,63 @@ export default function EditEmployee() {
     }
   }
 
-  const handleKeySubmit = e => {
-    e.preventDefault()
-    if (!inputKey.trim()) return setMessage('Please enter a passkey')
-    if (inputKey === DEALER_PASSKEY) {
-      setPasskeyEntered(true)
-      setMessage('')
-    } else {
-      setMessage('Incorrect passkey')
-    }
-  }
+const handleKeySubmit = e => {
+  e.preventDefault()
+  if (!inputKey.trim()) return setMessage('Please enter a passkey')
 
-  // ✅ Live search filtering
+  const isGuestUser = username?.toLowerCase() === 'guest'
+
+  if ((isGuestUser && inputKey === 'GUEST') || inputKey === DEALER_PASSKEY) {
+    setPasskeyEntered(true)
+    setMessage('')
+  } else {
+    setMessage('Incorrect passkey')
+  }
+}
+
+
+
   const filteredEmployees = useMemo(() => {
     return employees.filter(emp =>
       emp.displayName.toLowerCase().includes(searchTerm.toLowerCase())
     )
   }, [employees, searchTerm])
 
-  if (!passkeyEntered) {
-    return (
-      <div className={`passkey-container${darkMode ? ' dark' : ''}`}>
-        <h3>Dealer Authorization</h3>
-        <p className="passkey-instruction">
-          Enter the dealer passkey to edit or delete employees.
-        </p>
-        <form onSubmit={handleKeySubmit}>
-          <input
-            type="password"
-            placeholder="Enter dealer passkey"
-            value={inputKey}
-            onChange={e => setInputKey(e.target.value)}
-            className="passkey-input"
-          />
-          <button type="submit" className="btn submit-btn" disabled={!inputKey.trim()}>
-            Submit
-          </button>
-        </form>
-        {message && (
-          <div className={`status-msg ${message.toLowerCase().includes('incorrect') ? 'error' : 'info'}`}>
-            {message}
-          </div>
-        )}
-      </div>
-    )
-  }
+if (!passkeyEntered) {
+  return (
+    <div className={`passkey-container${darkMode ? ' dark' : ''}`}>
+      <h3>Dealer Authorization</h3>
+      <p className="passkey-instruction">
+        Enter the dealer passkey to edit or delete employees.
+      </p>
+      <p className="guest-note">
+        💡 As a <strong>guest</strong>, you can enter <code>GUEST</code> as the passkey.
+      </p>
+      <form onSubmit={handleKeySubmit}>
+        <input
+          type="password"
+          placeholder="Enter passkey"
+          value={inputKey}
+          onChange={e => setInputKey(e.target.value)}
+          className="passkey-input"
+        />
+        <button type="submit" className="btn submit-btn" disabled={!inputKey.trim()}>
+          Submit
+        </button>
+      </form>
+      {message && (
+        <div className={`status-msg ${message.toLowerCase().includes('incorrect') ? 'error' : 'info'}`}>
+          {message}
+        </div>
+      )}
+    </div>
+  )
+}
+
 
   return (
     <div className={`container${darkMode ? ' dark' : ''}`}>
-      {/* Search bar */}
+      
       <div className="search-container">
         <input
           type="text"

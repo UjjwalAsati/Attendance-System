@@ -1,4 +1,3 @@
-
 const mongoose = require('mongoose');
 const EmployeeSchema = require('../models/Employee').schema;
 const AttendanceSchema = require('../models/Attendance').schema;
@@ -11,6 +10,8 @@ const getTenantModels = async (username) => {
     dbUri = process.env.MONGODB_URI_JM;
   } else if (username === 'jatashankarsalesandservices@gmail.com') {
     dbUri = process.env.MONGODB_URI_JSS;
+  } else if (username === 'guest') {
+    dbUri = process.env.MONGODB_URI_GUEST;   
   } else {
     throw new Error('Unknown user');
   }

@@ -57,19 +57,36 @@ function euclideanDistance(d1, d2) {
 app.post('/register-face', async (req, res) => {
   try {
     const { name, faceDescriptor, username } = req.body;
+
     if (!name || !faceDescriptor || faceDescriptor.length === 0 || !username) {
       return res.status(400).json({ error: 'Missing name, username or face descriptor' });
     }
 
     const { Employee } = await getTenantModels(username);
-    const employee = new Employee({ name, faceDescriptor, username });
+
+    const employee = new Employee({ 
+      name: name.toLowerCase(), 
+      faceDescriptor, 
+      username 
+    });
+
     await employee.save();
+
     res.json({ success: true, message: 'Face registered successfully' });
   } catch (error) {
-    console.error('Error registering face:', error);
+    if (error.code === 11000) {
+      console.warn('Duplicate employee attempted:', req.body.name);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Employee already exists. Kindly use name1, name2, etc.' 
+      });
+    }
+
+    console.error('Registration error:', error.message);
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 
 const { getTenantModels } = require('./models/getTenantModels');
@@ -342,13 +359,6 @@ app.get('/download-attendance', async (req, res) => {
 });
 
 
-
-
-
-
-
-
-
 app.get('/download-overview', async (req, res) => {
   try {
     const { username } = req.query;
@@ -530,19 +540,36 @@ app.delete('/cleanup-old', async (req, res) => {
     const { username } = req.query;
     if (!username) return res.status(400).json({ success: false, message: 'Username required' });
 
-    const { Attendance } = await getTenantModels(username);
+    const { Attendance, Employee } = await getTenantModels(username);
 
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - 60);
+    let cutoffDate = new Date(); 
+    let deletedCount = { attendance: 0, employee: 0 };
 
-    const result = await Attendance.deleteMany({ timestamp: { $lt: cutoffDate } });
+    if (username === 'guest') {
+      
+     cutoffDate.setDate(cutoffDate.getDate() - 1);
+      const attendanceResult = await Attendance.deleteMany({ timestamp: { $lt: cutoffDate } });
+      const employeeResult = await Employee.deleteMany({ createdAt: { $lt: cutoffDate } });
 
-    res.json({ success: true, deletedCount: result.deletedCount });
+      deletedCount.attendance = attendanceResult.deletedCount;
+      deletedCount.employee = employeeResult.deletedCount;
+
+    } else {
+     
+      cutoffDate.setDate(cutoffDate.getDate() - 60);
+
+      const attendanceResult = await Attendance.deleteMany({ timestamp: { $lt: cutoffDate } });
+      deletedCount.attendance = attendanceResult.deletedCount;
+    }
+
+    res.json({ success: true, deletedCount });
+
   } catch (err) {
     console.error('Cleanup error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
+
 
 
 

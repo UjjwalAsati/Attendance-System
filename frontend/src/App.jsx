@@ -15,8 +15,10 @@ function App() {
     if (attendanceRef.current?.stopCamera) {
       attendanceRef.current.stopCamera();
     }
-    setUserEmail('');
     localStorage.removeItem('username');
+    localStorage.removeItem('isGuest');
+    setUserEmail('');
+    setDeviceAuthorized(false);
     window.location.reload();
   };
 
@@ -25,9 +27,17 @@ function App() {
     localStorage.setItem('username', email);
   };
 
+  const isGuest = userEmail === 'guest';
+
   return (
     <div className="App">
-      {!deviceAuthorized ? (
+      {isGuest ? (
+        <Home
+          userEmail={userEmail}
+          handleLogout={handleLogout}
+          attendanceRef={attendanceRef}
+        />
+      ) : !deviceAuthorized ? (
         <DeviceAuth setDeviceAuthorized={setDeviceAuthorized} />
       ) : !userEmail ? (
         <Login onLogin={handleLogin} />
@@ -41,5 +51,6 @@ function App() {
     </div>
   );
 }
+
 
 export default App;
