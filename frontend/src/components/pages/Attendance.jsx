@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as faceapi from 'face-api.js';
 import '../styles/Attendance.css';
 
-export default function AttendancePage({ onLogout }) {
+export default function AttendancePage({ onLogout, attendanceRef }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const successAudioRef = useRef(new Audio('/success.mp3'));
@@ -11,6 +11,8 @@ export default function AttendancePage({ onLogout }) {
   const [sending, setSending] = useState(false);
   const [mode, setMode] = useState(null);
   const [flash, setFlash] = useState(null);
+  const noFaceTimerRef = useRef(null);
+  const NO_FACE_TIMEOUT = 1.5 * 60 * 1000;
 
   useEffect(() => {
     const loadModels = async () => {
@@ -67,10 +69,26 @@ export default function AttendancePage({ onLogout }) {
       .withFaceDescriptor();
 
       if (!detection) {
-        setMessage('No face detected, please try again.');
-        setSending(false);
-        return;
+      setMessage('No face detected, please try again.');
+
+      
+      if (!noFaceTimerRef.current) {
+        noFaceTimerRef.current = setTimeout(() => {
+          
+          
+          handleLogout();
+
+        }, NO_FACE_TIMEOUT);
       }
+
+      setSending(false);
+      return;
+    }
+
+    if (noFaceTimerRef.current) {
+      clearTimeout(noFaceTimerRef.current);
+      noFaceTimerRef.current = null;
+    }
       const descriptor = Array.from(detection.descriptor);
       const timestamp = new Date().toISOString();
       const username = localStorage.getItem('username');
@@ -101,6 +119,18 @@ export default function AttendancePage({ onLogout }) {
     setSending(false);
   };
 
+
+  const handleLogout = () => {
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    localStorage.removeItem('username');
+    localStorage.removeItem('isGuest');
+    window.location.reload();
+  };
+
   useEffect(() => {
     let interval;
     if (mode && !loadingModels && !sending) {
@@ -110,6 +140,21 @@ export default function AttendancePage({ onLogout }) {
     }
     return () => clearInterval(interval);
   }, [mode, loadingModels, sending]);
+
+  useEffect(() => {
+  if (attendanceRef) {
+    attendanceRef.current = {
+      stopCamera: () => {
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
+      },
+      isRunning: !!mode 
+    };
+  }
+}, [mode]);
+
 
   return (
     <div className={`attendance-main ${flash === 'green' ? 'flash-green' : flash === 'blue' ? 'flash-blue' : ''}`}>

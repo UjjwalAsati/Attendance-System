@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './App.css';
 import Home from './components/pages/Home';
 import Login from './components/pages/Login';
@@ -11,7 +11,34 @@ function App() {
   );
   const attendanceRef = useRef(null);
 
+  const INACTIVITY_TIMEOUT = 5 * 60 * 1000; 
+  const inactivityTimerRef = useRef(null);
+
+  const resetInactivityTimer = () => {
+    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    inactivityTimerRef.current = setTimeout(() => {
+      if (!attendanceRef.current?.isRunning) {
+        handleLogout();
+      }
+    }, INACTIVITY_TIMEOUT);
+  };
+
+
+  useEffect(() => {
+    
+    const events = ['touchstart', 'touchmove', 'touchend', 'click'];
+
+    events.forEach(e => document.addEventListener(e, resetInactivityTimer));
+    resetInactivityTimer();
+
+    return () => {
+      events.forEach(e => document.removeEventListener(e, resetInactivityTimer));
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    };
+  }, []);
+
   const handleLogout = () => {
+    // stop camera in Attendance component if exists
     if (attendanceRef.current?.stopCamera) {
       attendanceRef.current.stopCamera();
     }
@@ -51,6 +78,5 @@ function App() {
     </div>
   );
 }
-
 
 export default App;
